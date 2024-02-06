@@ -1,0 +1,19 @@
+{
+  "taskName" : "Test",
+  "started" : true,
+  "startedAt" : [ 2024, 2, 5, 20, 23, 1, 77943268 ],
+  "subtasks" : [ {
+    "name" : "subtask",
+    "description" : "fsdf",
+    "completed" : false,
+    "completedAt" : [ 999999999, 12, 31, 23, 59, 59, 999999999 ]
+  } ],
+  "description" : "test dec",
+  "notes" : [ "note1", "note2" ],
+  "noteReferences" : [ "0782b1d9-1015-496a-9501-8c9dc56a6199" ],
+  "completed" : false,
+  "completedAt" : [ 999999999, 12, 31, 23, 59, 59, 999999999 ],
+  "uuid" : "05c0edb1-3aed-43e4-ac26-bada8a5dc451",
+  "basePath" : "file:///home/mindspice/code/java/mortal/DATA/TODO/2024/FEBRUARY/",
+  "file" : "/home/mindspice/code/java/mortal/DATA/TODO/2024/FEBRUARY/05c0edb1-3aed-43e4-ac26-bada8a5dc451.task"
+}
