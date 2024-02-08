@@ -1,6 +1,8 @@
 package shell;
 
 import org.jline.builtins.Nano;
+import org.jline.reader.Completer;
+import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
 
 import java.io.File;
@@ -11,54 +13,41 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
+import java.util.List;
 
 
-public class DirectoryManager {
+public class DirectoryManager extends ShellEvaluator<DirectoryManager> {
     private Path currPath;
     private Path rmPath;
-    private Terminal terminal;
 
-    public DirectoryManager(Terminal terminal) {
-        this.currPath = Path.of(System.getProperty("user.dir")).toAbsolutePath();
-        this.terminal = terminal;
+    public DirectoryManager() { }
+
+    @Override
+    public void init(Terminal terminal, LineReader lineReader) {
+        super.init(terminal, lineReader);
+
+        var commandInit = List.of(
+                ShellCommand.of("ls", DirectoryManager::listDir),
+                ShellCommand.of("nano", DirectoryManager::nano),
+                ShellCommand.of("mkdir", DirectoryManager::mkdir),
+                ShellCommand.of("cp", DirectoryManager::copy),
+                ShellCommand.of("touch", DirectoryManager::touch),
+                ShellCommand.of("cd", DirectoryManager::changeDir),
+                ShellCommand.of("mv", DirectoryManager::move),
+                ShellCommand.of("rm", DirectoryManager::remove)
+        );
+        commands.addAll(commandInit);
     }
 
     public Path getCurrPath() {
         return currPath;
     }
 
-    public String processCommand(String input) {
-        if (input.startsWith("system")) {
-            input = input.replace("system", "");
-        }
-        input = input.trim();
-        if (input.isEmpty()) { return ""; }
-        String[] dirCommand = input.split(" ");
-
-        switch (dirCommand[0]) {
-            case String cmd when cmd.equalsIgnoreCase("ls") -> { return listDir(currPath); }
-            case String cmd when cmd.toLowerCase().startsWith("nano") -> { return nano(input); }
-            case String cmd when cmd.toLowerCase().startsWith("mkdir") -> { return mkdir(input); }
-            case String cmd when cmd.toLowerCase().startsWith("cp") -> { return copy(input); }
-            case String cmd when cmd.toLowerCase().startsWith("touch") -> { return touch(input); }
-            case String cmd when cmd.equalsIgnoreCase("cd") -> { return changeDir(dirCommand); }
-            case String cmd when cmd.toLowerCase().startsWith("mv") -> { return move(input); }
-            case String cmd when cmd.toLowerCase().startsWith("rm") -> {
-                if (cmd.toLowerCase().contains("-confirm")) { return removeConfirm(); }
-                if (cmd.toLowerCase().contains("-abort")) { return removeAbort(); }
-                if (cmd.toLowerCase().contains("-path")) { return rmPath == null ? "Error: null path" : rmPath.toString(); }
-                return remove(input);
-            }
-            default -> { return "Error: Invalid directory or command"; }
-        }
-    }
-
-    private String nano(String input) {
-        String[] cmdParts = input.split(" ", 2);
-        if (cmdParts.length < 2) {
+    private String nano(String[] input) {
+        if (input.length < 2) {
             return "Error: No file path specified for nano";
         }
-        String filePath = cmdParts[1];
+        String filePath = input[1];
 
         Path file = currPath.resolve(filePath).normalize();
         if (!file.toFile().exists() || file.toFile().isDirectory()) {
@@ -69,12 +58,11 @@ public class DirectoryManager {
         return "Exited nano";
     }
 
-    private String mkdir(String input) {
-        String[] cmdParts = input.split(" ", 2);
-        if (cmdParts.length < 2) {
+    private String mkdir(String[] input) {
+        if (input.length < 2) {
             return "Error: No directory name specified for mkdir";
         }
-        Path newDir = currPath.resolve(cmdParts[1]).normalize();
+        Path newDir = currPath.resolve(input[1]).normalize();
         if (!Files.exists(newDir)) {
             try {
                 Files.createDirectories(newDir);
@@ -87,8 +75,7 @@ public class DirectoryManager {
         }
     }
 
-    private String copy(String input) {
-        String[] cmdParts = input.split(" ");
+    private String copy(String[] cmdParts) {
         if (cmdParts.length < 3) {
             return "Error: cp requires source and destination paths";
         }
@@ -107,8 +94,7 @@ public class DirectoryManager {
         }
     }
 
-    private String touch(String input) {
-        String[] cmdParts = input.split(" ", 2);
+    private String touch(String[] cmdParts) {
         if (cmdParts.length < 2) {
             return "Error: No file name specified for touch";
         }
@@ -126,10 +112,10 @@ public class DirectoryManager {
         }
     }
 
-    private String changeDir(String[] dirCommand) {
+    private String changeDir(String[] cmdParts) {
         String path = "";
-        if (dirCommand.length < 2) { return "Error: No path specified"; }
-        String newPath = dirCommand[1];
+        if (cmdParts.length < 2) { return "Error: No path specified"; }
+        String newPath = cmdParts[1];
         if (newPath.startsWith("/")) {// Absolute path
             Path resolvedPath = Paths.get(newPath).normalize();
             path = resolvedPath.toString();
@@ -157,8 +143,7 @@ public class DirectoryManager {
         return "Current Path: " + path;
     }
 
-    public String move(String input) {
-        String[] cmdParts = input.split(" ");
+    public String move(String[] cmdParts) {
         if (cmdParts.length < 3) {
             return "Error: mv requires source and destination paths";
         }
@@ -177,8 +162,7 @@ public class DirectoryManager {
         }
     }
 
-    public String remove(String input) {
-        String[] cmdParts = input.split(" ", 2);
+    public String remove(String[] cmdParts) {
         if (cmdParts.length < 2) {
             return "Error: No file or directory specified for rm";
         }
@@ -210,14 +194,17 @@ public class DirectoryManager {
         return "Aborted removal of: " + oldPath;
     }
 
-    private String listDir(Path path) {
-        File dir = path.toFile();
+    private String listDir(String[] input) {
+        if (input.length < 2) {
+            return "Error: No file or directory specified for ls";
+        }
+        File dir = Path.of(input[1]).toFile();
         if (!dir.exists() || !dir.isDirectory()) {
             return "Invalid directory path.";
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("\"").append(path).append("\"\n");
+        sb.append("\"").append(input[1]).append("\"\n");
         File[] files = dir.listFiles();
         if (files != null) {
             for (File file : files) {
@@ -247,4 +234,6 @@ public class DirectoryManager {
             System.out.println("Error launching nano: " + e.getMessage());
         }
     }
+
+
 }

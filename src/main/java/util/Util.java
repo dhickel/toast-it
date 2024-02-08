@@ -3,6 +3,8 @@ package util;
 import enums.EntryType;
 
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,6 +16,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
+
+
 
 
 public class Util {
@@ -38,6 +42,7 @@ public class Util {
         return LocalDateTime.parse(dateTimeString, formatter);
     }
 
+
     public static void createYearMonthStructure(String rootPath) throws IOException {
         int currentYear = LocalDate.now().getYear();
         Path yearPath = Paths.get(rootPath, String.valueOf(currentYear));
@@ -57,6 +62,7 @@ public class Util {
             }
         }
     }
+
 
     public static Path getEntriesPath(EntryType entryType, Year year, Month month) {
         return Paths.get(Settings.ROOT_PATH, entryType.name(), year.toString(), month.name());
