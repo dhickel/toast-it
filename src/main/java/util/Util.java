@@ -1,8 +1,6 @@
 package util;
 
 import enums.EntryType;
-import enums.Month;
-import enums.Year;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,6 +8,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.List;
@@ -47,7 +47,6 @@ public class Util {
             Files.createDirectories(yearPath);
         }
 
-        // Create directories for each month
         for (int month = 1; month <= 12; month++) {
             LocalDate date = LocalDate.of(currentYear, month, 1);
             String monthName = date.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH).toUpperCase();
@@ -60,7 +59,11 @@ public class Util {
     }
 
     public static Path getEntriesPath(EntryType entryType, Year year, Month month) {
-        return Paths.get(Settings.GET().ROOT_PATH, entryType.name(), year.name().replace("_", ""), month.name());
+        return Paths.get(Settings.ROOT_PATH, entryType.name(), year.toString(), month.name());
+    }
+
+    public static Path getEntriesPath(EntryType entryType, int year, Month month) {
+        return Paths.get(Settings.ROOT_PATH, entryType.name(), String.valueOf(year), month.name());
     }
 
     public static DateTimeFormatter dateTimeFormat() {

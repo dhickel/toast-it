@@ -1,5 +1,6 @@
 package shell;
 
+import calendar.Calendar;
 import io.mindspice.kawautils.wrappers.KawaInstance;
 import io.mindspice.kawautils.wrappers.functional.FuncRef;
 import io.mindspice.kawautils.wrappers.functional.FuncType;
@@ -55,8 +56,10 @@ public class SchemeShell {
     public SchemeShell(int port, CommandInterface commandInterface, KawaInstance kawa) throws IOException {
         this.kawa = kawa;
         this.commandInterface = commandInterface;
+
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
+        sshd.setHost("127.0.0.1");
         sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(Paths.get("hostkey.ser")));
         sshd.setPasswordAuthenticator(new AuthInstance());
         sshd.setShellFactory(createShellFactory());
@@ -75,6 +78,7 @@ public class SchemeShell {
 
         kawa.defineObject("print-consumer", printToTerminal);
         kawa.safeEval("(define (print obj) print-consumer:accept obj)");
+
     }
 
     public Consumer<Object> printToTerminal = (Object object) -> {

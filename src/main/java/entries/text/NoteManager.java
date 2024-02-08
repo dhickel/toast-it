@@ -1,4 +1,4 @@
-package notes;
+package entries.text;
 
 import java.util.HashSet;
 import java.util.Set;

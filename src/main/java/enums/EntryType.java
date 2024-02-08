@@ -2,7 +2,8 @@ package enums;
 
 public enum EntryType {
     NOTE,
-    TODO,
+    TASK,
     EVENT,
-    JOURNAL
+    JOURNAL,
+    PROJECT
 }
