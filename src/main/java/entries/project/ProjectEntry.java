@@ -1,10 +1,9 @@
 package entries.project;
 
-import application.Database;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import entries.task.FullTaskEntry;
 import entries.task.TaskEntry;
+import entries.task.Entry;
 import enums.EntryType;
 import util.JSON;
 import util.Util;
@@ -15,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 
@@ -24,7 +24,7 @@ public record ProjectEntry(
         boolean completed,
         List<UUID> tasks,
         @JsonIgnore
-        List<FullTaskEntry> taskObjs,
+        List<TaskEntry> taskObjs,
         String description,
         Set<String> tags,
         Path projectPath,
@@ -34,18 +34,30 @@ public record ProjectEntry(
         UUID uuid,
         Path basePath,
         String openWith
-) implements TaskEntry<ProjectEntry> {
+) implements Entry<ProjectEntry> {
+
+    public ProjectEntry {
+        dueBy = dueBy.truncatedTo(ChronoUnit.MINUTES);
+        startedAt = startedAt.truncatedTo(ChronoUnit.MINUTES);
+        completedAt = completedAt.truncatedTo(ChronoUnit.MINUTES);
+        taskObjs = taskObjs == null ? List.of() : taskObjs;
+        try {
+            basePath = basePath == null ? Util.getEntriesPath(EntryType.PROJECT) : basePath;
+        } catch (IOException e) {
+            System.out.println("Error creating path for: " + this);
+        }
+    }
 
     public void loadTasks() {
         tasks.forEach(uuid -> {
-            try {
-                FullTaskEntry task = Database.instance().getTask(uuid);
-                if (task != null) {
-                    taskObjs.add(task);
-                }
-            } catch (IOException e) {
-                // TODO push this to terminal
-            }
+//            try {
+//                FullTaskEntry task = DBConnection.instance().getTask(uuid);
+//                if (task != null) {
+//                    taskObjs.add(task);
+//                }
+//            } catch (IOException e) {
+//                // TODO push this to terminal
+//            }
         });
     }
 
@@ -56,8 +68,10 @@ public record ProjectEntry(
         // Always write meta file on change
         Path metaFilePath = basePath.resolve(uuid + ".project");
         try {
+            System.out.println(basePath);
             String metaJson = JSON.writePretty(this);
             Files.writeString(metaFilePath, metaJson);
+            System.out.println(JSON.loadObjectFromFile(metaFilePath, ProjectEntry.class).basePath);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to write project file: " + metaFilePath, e);
         }
@@ -103,14 +117,14 @@ public record ProjectEntry(
     public boolean completed() {
         return taskObjs.isEmpty()
                 ? completed
-                : taskObjs.stream().allMatch(TaskEntry::completed);
+                : taskObjs.stream().allMatch(Entry::completed);
     }
 
     @Override
     public double completionDbl() {
         return taskObjs.isEmpty()
                 ? (completed ? 1 : 0)
-                : taskObjs.stream().mapToDouble(TaskEntry::completionDbl).average().orElse(1);
+                : taskObjs.stream().mapToDouble(Entry::completionDbl).average().orElse(1);
     }
 
     @Override
@@ -123,15 +137,23 @@ public record ProjectEntry(
         return null;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public Builder updateBuilder() {
+        return new Builder(this);
+    }
+
     public static class Builder {
         private String name = "Unnamed";
         private boolean started = false;
         private boolean completed = false;
         private List<UUID> tasks = new ArrayList<>();
-        private List<FullTaskEntry> taskObjs = new ArrayList<>();
+        private List<TaskEntry> taskObjs = new ArrayList<>();
         private String description = "";
         private Set<String> tags = new HashSet<>();
-        private Path projectDirectory = Path.of("/");
+        private Path projectPath = Path.of("/");
         private LocalDateTime dueBy = LocalDateTime.MAX;
         private LocalDateTime startedAt = LocalDateTime.MAX;
         private LocalDateTime completedAt = LocalDateTime.MAX;
@@ -149,7 +171,7 @@ public record ProjectEntry(
             this.taskObjs = p.taskObjs;
             this.description = p.description;
             this.tags = p.tags;
-            this.projectDirectory = p.projectPath;
+            this.projectPath = p.projectPath;
             this.dueBy = p.dueBy;
             this.startedAt = p.startedAt;
             this.completedAt = p.completedAt;
@@ -187,6 +209,11 @@ public record ProjectEntry(
             return this;
         }
 
+        public Builder setTaskObjs(List<TaskEntry> tasks){
+            this.taskObjs = tasks;
+            return this;
+        }
+
         public Builder setDescription(String description) {
             this.description = description;
             return this;
@@ -208,7 +235,7 @@ public record ProjectEntry(
         }
 
         public Builder setProjectDirectory(Path projectDirectory) {
-            this.projectDirectory = projectDirectory;
+            this.projectPath = projectDirectory;
             return this;
         }
 
@@ -242,17 +269,9 @@ public record ProjectEntry(
             return this;
         }
 
-        public ProjectEntry build() {
+        public ProjectEntry build() throws IOException {
             if (basePath == null) {
-                Path directoryPath = Util.getEntriesPath(
-                        EntryType.PROJECT,
-                        LocalDateTime.now().getYear(),
-                        LocalDateTime.now().getMonth()
-                );
-                if (!Files.exists(directoryPath)) {
-                    throw new IllegalStateException("Could not resolve path of: " + directoryPath);
-                }
-                basePath = directoryPath;
+                basePath = Util.getEntriesPath(EntryType.PROJECT);
             }
             return new ProjectEntry(
                     name,
@@ -262,7 +281,7 @@ public record ProjectEntry(
                     Collections.unmodifiableList(taskObjs),
                     description,
                     Collections.unmodifiableSet(tags),
-                    projectDirectory,
+                    projectPath,
                     dueBy,
                     startedAt,
                     completedAt,

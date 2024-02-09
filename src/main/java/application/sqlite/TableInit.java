@@ -1,4 +1,7 @@
-package sqlite;
+package application.sqlite;
+
+import java.util.List;
+
 
 public class TableInit {
 
@@ -62,4 +65,12 @@ public class TableInit {
                 meta_path TEXT
             );
             """;
+
+    public static List<String> INIT_STATEMENTS = List.of(
+            EVENT_TABLE,
+            TASK_TABLE,
+            PROJECT_TABLE,
+            NOTE_TABLE,
+            JOURNAL_TABLE
+    );
 }

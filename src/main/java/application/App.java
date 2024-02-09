@@ -1,8 +1,10 @@
 package application;
 
+import application.sqlite.DBConnection;
 import io.mindspice.kawautils.wrappers.KawaInstance;
 import shell.ApplicationShell;
 import util.Settings;
+import util.Util;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,8 +14,9 @@ import java.util.HashSet;
 public class App {
 
     private static final App INSTANCE;
-    private KawaInstance scheme = new KawaInstance();
+    private KawaInstance scheme;
     private ApplicationShell shell;
+    private DBConnection dbConnection;
 
     private final HashSet<String> tags = new HashSet<>();
 
@@ -32,17 +35,25 @@ public class App {
 
     private App() throws IOException {
         scheme = new KawaInstance();
+        scheme.defineObject("SchemeInstance", scheme);
         var loadResult = scheme.loadSchemeFile(new File("scheme_files/init.scm"));
         if (!loadResult.valid()) {
             System.err.println("Error loading init.scm: " + loadResult.exception().orElseThrow().getMessage());
         }
         shell = new ApplicationShell(scheme);
-        System.out.println(Settings.SHELL_BIND_PORT);
+        dbConnection = new DBConnection();
+
     }
 
-    public void init() {
+    public App init() throws IOException {
+
         scheme.defineObject("ShellInstance", shell);
         scheme.defineObject("AppInstance", this);
+        return instance();
+    }
+
+    public DBConnection getDatabase() {
+        return dbConnection;
     }
 
 

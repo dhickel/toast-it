@@ -1,23 +1,20 @@
 package util;
 
 import enums.EntryType;
+import kawa.lib.files;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.Month;
-import java.time.Year;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-
-
 
 
 public class Util {
@@ -42,34 +39,65 @@ public class Util {
         return LocalDateTime.parse(dateTimeString, formatter);
     }
 
+//    public static void createYearMonthStructure(String rootPath) throws IOException {
+//        int currentYear = LocalDate.now().getYear();
+//        Path yearPath = Paths.get(rootPath, String.valueOf(currentYear));
+//
+//        // Create the year directory if it doesn't exist
+//        if (!Files.exists(yearPath)) {
+//            Files.createDirectories(yearPath);
+//        }
+//
+//        for (int month = 1; month <= 12; month++) {
+//            LocalDate date = LocalDate.of(currentYear, month, 1);
+//            String monthName = date.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH).toUpperCase();
+//            Path monthPath = yearPath.resolve(monthName);
+//
+//            if (!Files.exists(monthPath)) {
+//                System.out.println("Created Month:" + monthPath);
+//                Files.createDirectory(monthPath);
+//            }
+//        }
+//    }
 
-    public static void createYearMonthStructure(String rootPath) throws IOException {
-        int currentYear = LocalDate.now().getYear();
-        Path yearPath = Paths.get(rootPath, String.valueOf(currentYear));
+//    public static void createPath(EntryType entryType) throws IOException {
+//        Path rootPath = Paths.get(Settings.ROOT_PATH + File.separator + entryType.name());
+//
+//        if (!Files.exists(rootPath)) {
+//            files.cre
+//        }
+//
+//        int currentYear = LocalDate.now().getYear();
+//        Path yearPath = Paths.get(rootPath, String.valueOf(currentYear));
+//
+//        // Create the year directory if it doesn't exist
+//        if (!Files.exists(yearPath)) {
+//            Files.createDirectories(yearPath);
+//        }
+//
+//        for (int month = 1; month <= 12; month++) {
+//            LocalDate date = LocalDate.of(currentYear, month, 1);
+//            String monthName = date.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH).toUpperCase();
+//            Path monthPath = yearPath.resolve(monthName);
+//
+//            if (!Files.exists(monthPath)) {
+//                System.out.println("Created Month:" + monthPath);
+//                Files.createDirectory(monthPath);
+//            }
+//        }
+//    }
 
-        // Create the year directory if it doesn't exist
-        if (!Files.exists(yearPath)) {
-            Files.createDirectories(yearPath);
+    public static Path getEntriesPath(EntryType entryType) throws IOException {
+        var dateTime = LocalDateTime.now();
+        var path = Paths.get(
+                Settings.ROOT_PATH, entryType.name(),
+                String.valueOf(dateTime.getYear()),
+                dateTime.getMonth().toString()
+        );
+        if (!Files.exists(path)) {
+            Files.createDirectories(path);
         }
-
-        for (int month = 1; month <= 12; month++) {
-            LocalDate date = LocalDate.of(currentYear, month, 1);
-            String monthName = date.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH).toUpperCase();
-            Path monthPath = yearPath.resolve(monthName);
-
-            if (!Files.exists(monthPath)) {
-                Files.createDirectory(monthPath);
-            }
-        }
-    }
-
-
-    public static Path getEntriesPath(EntryType entryType, Year year, Month month) {
-        return Paths.get(Settings.ROOT_PATH, entryType.name(), year.toString(), month.name());
-    }
-
-    public static Path getEntriesPath(EntryType entryType, int year, Month month) {
-        return Paths.get(Settings.ROOT_PATH, entryType.name(), String.valueOf(year), month.name());
+        return path;
     }
 
     public static DateTimeFormatter dateTimeFormat() {
@@ -82,6 +110,16 @@ public class Util {
 
     public static String toPercentage(double value) {
         return String.format("%.2f%%", value * 100);
+    }
+
+    public static String[] splitRemoveFirst(String string) {
+        String[] split = string.split(" ");
+        return Arrays.copyOfRange(split, 1, split.length);
+    }
+
+    public static LocalDateTime unixToLocal(long unixTime) {
+        Instant inst = Instant.ofEpochSecond(unixTime);
+        return LocalDateTime.ofInstant(inst, ZoneId.systemDefault()).truncatedTo(ChronoUnit.MINUTES);
     }
 
 

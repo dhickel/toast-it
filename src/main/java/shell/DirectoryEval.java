@@ -1,9 +1,9 @@
 package shell;
 
 import org.jline.builtins.Nano;
-import org.jline.reader.Completer;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
+import util.Util;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,28 +13,28 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 
 
-public class DirectoryManager extends ShellEvaluator<DirectoryManager> {
-    private Path currPath;
-    private Path rmPath;
+public class DirectoryEval extends ShellEvaluator<DirectoryEval> {
+    private Path currPath = Path.of(System.getProperty("user.dir")).toAbsolutePath();
 
-    public DirectoryManager() { }
+    public DirectoryEval() { }
 
     @Override
     public void init(Terminal terminal, LineReader lineReader) {
         super.init(terminal, lineReader);
 
         var commandInit = List.of(
-                ShellCommand.of("ls", DirectoryManager::listDir),
-                ShellCommand.of("nano", DirectoryManager::nano),
-                ShellCommand.of("mkdir", DirectoryManager::mkdir),
-                ShellCommand.of("cp", DirectoryManager::copy),
-                ShellCommand.of("touch", DirectoryManager::touch),
-                ShellCommand.of("cd", DirectoryManager::changeDir),
-                ShellCommand.of("mv", DirectoryManager::move),
-                ShellCommand.of("rm", DirectoryManager::remove)
+                ShellCommand.of("ls", DirectoryEval::listDir),
+                ShellCommand.of("nano", DirectoryEval::nano),
+                ShellCommand.of("mkdir", DirectoryEval::mkdir),
+                ShellCommand.of("cp", DirectoryEval::copy),
+                ShellCommand.of("touch", DirectoryEval::touch),
+                ShellCommand.of("cd", DirectoryEval::changeDir),
+                ShellCommand.of("mv", DirectoryEval::move),
+                ShellCommand.of("rm", DirectoryEval::remove)
         );
         commands.addAll(commandInit);
     }
@@ -43,11 +43,12 @@ public class DirectoryManager extends ShellEvaluator<DirectoryManager> {
         return currPath;
     }
 
-    private String nano(String[] input) {
-        if (input.length < 2) {
+    private String nano(String input) {
+        String[] splitCmd = input.split(" ");
+        if (splitCmd.length < 2) {
             return "Error: No file path specified for nano";
         }
-        String filePath = input[1];
+        String filePath = splitCmd[1];
 
         Path file = currPath.resolve(filePath).normalize();
         if (!file.toFile().exists() || file.toFile().isDirectory()) {
@@ -58,11 +59,12 @@ public class DirectoryManager extends ShellEvaluator<DirectoryManager> {
         return "Exited nano";
     }
 
-    private String mkdir(String[] input) {
-        if (input.length < 2) {
+    private String mkdir(String input) {
+        String[] splitCmd = input.split(" ");
+        if (splitCmd.length < 2) {
             return "Error: No directory name specified for mkdir";
         }
-        Path newDir = currPath.resolve(input[1]).normalize();
+        Path newDir = currPath.resolve(splitCmd[1]).normalize();
         if (!Files.exists(newDir)) {
             try {
                 Files.createDirectories(newDir);
@@ -75,12 +77,13 @@ public class DirectoryManager extends ShellEvaluator<DirectoryManager> {
         }
     }
 
-    private String copy(String[] cmdParts) {
-        if (cmdParts.length < 3) {
+    private String copy(String input) {
+        String[] splitCmd = input.split(" ");
+        if (splitCmd.length < 3) {
             return "Error: cp requires source and destination paths";
         }
-        Path source = currPath.resolve(cmdParts[1]).normalize();
-        Path destination = currPath.resolve(cmdParts[2]).normalize();
+        Path source = currPath.resolve(splitCmd[1]).normalize();
+        Path destination = currPath.resolve(splitCmd[2]).normalize();
         if (Files.exists(source)) {
             try {
                 Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
@@ -94,11 +97,12 @@ public class DirectoryManager extends ShellEvaluator<DirectoryManager> {
         }
     }
 
-    private String touch(String[] cmdParts) {
-        if (cmdParts.length < 2) {
+    private String touch(String input) {
+        String[] splitCmd = input.split(" ");
+        if (splitCmd.length < 2) {
             return "Error: No file name specified for touch";
         }
-        Path file = currPath.resolve(cmdParts[1]).normalize();
+        Path file = currPath.resolve(splitCmd[1]).normalize();
         try {
             if (!Files.exists(file)) {
                 Files.createFile(file);
@@ -112,10 +116,15 @@ public class DirectoryManager extends ShellEvaluator<DirectoryManager> {
         }
     }
 
-    private String changeDir(String[] cmdParts) {
+    private String changeDir(String input) {
+        String[] splitCmd = input.split(" ");
+        if (splitCmd.length < 2) {
+            return "Error: No path specified";
+        }
+
         String path = "";
-        if (cmdParts.length < 2) { return "Error: No path specified"; }
-        String newPath = cmdParts[1];
+        String newPath = splitCmd[1];
+
         if (newPath.startsWith("/")) {// Absolute path
             Path resolvedPath = Paths.get(newPath).normalize();
             path = resolvedPath.toString();
@@ -143,12 +152,13 @@ public class DirectoryManager extends ShellEvaluator<DirectoryManager> {
         return "Current Path: " + path;
     }
 
-    public String move(String[] cmdParts) {
-        if (cmdParts.length < 3) {
+    public String move(String input) {
+        String[] splitCmd = input.split(" ");
+        if (splitCmd.length < 3) {
             return "Error: mv requires source and destination paths";
         }
-        Path sourcePath = currPath.resolve(cmdParts[1]).normalize();
-        Path destinationPath = currPath.resolve(cmdParts[2]).normalize();
+        Path sourcePath = currPath.resolve(splitCmd[1]).normalize();
+        Path destinationPath = currPath.resolve(splitCmd[2]).normalize();
 
         if (Files.exists(sourcePath)) {
             try {
@@ -162,49 +172,54 @@ public class DirectoryManager extends ShellEvaluator<DirectoryManager> {
         }
     }
 
-    public String remove(String[] cmdParts) {
-        if (cmdParts.length < 2) {
+    public String remove(String input) {
+        String[] splitCmd = input.split(" ");
+
+        if (splitCmd.length < 2) {
             return "Error: No file or directory specified for rm";
         }
-        Path pathToRemove = currPath.resolve(cmdParts[1]).normalize();
+        Path pathToRemove = currPath.resolve(splitCmd[1]).normalize();
 
         if (Files.exists(pathToRemove)) {
             if (Files.isDirectory(pathToRemove)) {
                 return "Error: Removing directory unsupported: " + pathToRemove;
             }
-            rmPath = pathToRemove;
-            return "Set removal to: " + pathToRemove + "\n"
-                    + "Enter rm-confirm to delete, rm-abort to abort deletion, or rm-path to display queued deletion";
+
+            while (true) {
+                String confirm = lineReader.readLine("Delete " + pathToRemove + "?\n Confirm (yes|no): ");
+                if (confirm.equals("yes")) {
+                    try {
+                        Files.delete(pathToRemove);
+                    } catch (IOException e) {
+                        return "Error: Error running rm command | " + e.getMessage();
+                    }
+                    return "Removed: " + pathToRemove;
+                } else if (confirm.contains("n")) {
+                    break;
+                }
+            }
         }
-        return "Error: File does not exist";
+        return "";
     }
 
-    public String removeConfirm() {
-        try {
-            Files.delete(rmPath);
-        } catch (IOException e) {
-            return "Error: Error running rm command | " + e.getMessage();
-        }
-        return "Removed: " + rmPath;
-    }
+    private String listDir(String input) {
+        String[] splitCmd = input.split(" ");
 
-    public String removeAbort() {
-        String oldPath = rmPath.toString();
-        rmPath = null;
-        return "Aborted removal of: " + oldPath;
-    }
-
-    private String listDir(String[] input) {
-        if (input.length < 2) {
-            return "Error: No file or directory specified for ls";
+        File dir;
+        if (splitCmd.length <= 1) {
+            dir = currPath.toFile();
+            System.out.println(dir);
+        } else {
+            dir = Path.of(splitCmd[1]).toFile();
+            System.out.println(dir);
         }
-        File dir = Path.of(input[1]).toFile();
+
         if (!dir.exists() || !dir.isDirectory()) {
             return "Invalid directory path.";
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("\"").append(input[1]).append("\"\n");
+        sb.append("\"").append(dir).append("\"\n");
         File[] files = dir.listFiles();
         if (files != null) {
             for (File file : files) {
@@ -221,7 +236,6 @@ public class DirectoryManager extends ShellEvaluator<DirectoryManager> {
                 return;
             }
             Nano nano = new Nano(terminal, file);
-
             nano.tabs = 2;
             nano.matchBrackets = "(<[{)>]}";
             nano.brackets = "\"’)>]}";

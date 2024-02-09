@@ -5,6 +5,7 @@ import util.JSON;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 
@@ -18,6 +19,11 @@ public record EventEntry(
 ) {
     public EventEntry asCompleted() {
         return new EventEntry(uuid, name, tags, startTime, endTime, true);
+    }
+
+    public EventEntry{
+        startTime = startTime.truncatedTo(ChronoUnit.MINUTES);
+        endTime = endTime.truncatedTo(ChronoUnit.MINUTES);
     }
 
     public Stub getStub() throws JsonProcessingException {

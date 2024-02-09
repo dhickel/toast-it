@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 
@@ -22,12 +23,21 @@ public record TextEntry(
         Path basePath
 ) {
 
+    public TextEntry {
+        createdAt = createdAt.truncatedTo(ChronoUnit.MINUTES);
+        try {
+            basePath = basePath == null ? Util.getEntriesPath(entryType) : basePath;
+        } catch (IOException e) {
+            System.out.println("Error creating path for: " + this);
+        }
+    }
+
     public void flushToDisk() {
         if (!Files.exists(basePath)) {
             throw new IllegalStateException("Failed to update on disk, base path does not exists: " + basePath);
         }
         // Always write meta file on change
-        Path metaFilePath = basePath.resolve(uuid + "." + entryType.name().toLowerCase() + "meta");
+        Path metaFilePath = basePath.resolve(uuid + "." + entryType.name().toLowerCase() + ".meta");
         try {
             String metaJson = JSON.writePretty(this);
             Files.writeString(metaFilePath, metaJson);
@@ -51,7 +61,7 @@ public record TextEntry(
     }
 
     public Path getMetaPath() {
-        return basePath.resolve(uuid + "." + entryType.name().toLowerCase() + "meta");
+        return basePath.resolve(uuid + "." + entryType.name().toLowerCase() + ".meta");
     }
 
     public Path getFilePath() {
@@ -121,17 +131,9 @@ public record TextEntry(
             return this;
         }
 
-        public TextEntry build() {
+        public TextEntry build() throws IOException {
             if (basePath == null) {
-                Path directoryPath = Util.getEntriesPath(
-                        EntryType.PROJECT,
-                        LocalDateTime.now().getYear(),
-                        LocalDateTime.now().getMonth()
-                );
-                if (!Files.exists(directoryPath)) {
-                    throw new IllegalStateException("Could not resolve path of: " + directoryPath);
-                }
-                basePath = directoryPath;
+                basePath = Util.getEntriesPath(entryType);
             }
 
             return new TextEntry(

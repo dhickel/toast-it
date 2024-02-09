@@ -12,6 +12,7 @@
 (define-alias ArrayList java.util.ArrayList)
 (define-alias List java.util.List)
 (define-alias HashSet java.util.HashSet)
+(define-alias Set java.util.Set)
 (define-alias HashMap java.util.HashMap)
 (define-alias Enum java.lang.Enum)
 (define-alias Arrays java.util.Arrays)
@@ -22,13 +23,16 @@
 ;; Application Classes
 (define-alias Calendar calendar.Calendar)
 (define-alias CalendarCell calendar.CalendarCell)
-(define-alias FullTaskEntry entries.task.FullTaskEntry)
+(define-alias TaskEntry entries.task.FullTaskEntry)
 (define-alias SubTaskEntry entries.task.SubTaskEntry)
 (define-alias TextEntry entries.text.TextEntry)
 (define-alias ProjectEntry entries.project.ProjectEntry)
 (define-alias EventEntry entries.event.EventEntry)
 (define-alias AppShell shell.ApplicationShell)
-
+(define-alias ShellMode shell.ShellMode)
+(define-alias DirectoryEval shell.DirectoryEval)
+(define-alias ShellEvaluator shell.ShellEvaluator)
+(define-alias SchemeEval shell.SchemeEval)
 
 ;; Application Enums
 (define-alias EntryType enums.EntryType)

@@ -1,6 +1,7 @@
 package entries.task;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,7 +13,11 @@ public record SubTaskEntry(
         List<SubTaskEntry> subtasks,
         boolean completed,
         LocalDateTime completedAt
-) implements TaskEntry<SubTaskEntry> {
+) implements Entry<SubTaskEntry> {
+
+    public SubTaskEntry {
+        completedAt = completedAt.truncatedTo(ChronoUnit.MINUTES);
+    }
 
     public SubTaskEntry asCompleted(LocalDateTime time) {
         return new SubTaskEntry(name, description, subtasks, true, time);
@@ -44,7 +49,7 @@ public record SubTaskEntry(
     public boolean completed() {
         return subtasks.isEmpty()
                 ? completed
-                : subtasks.stream().allMatch(TaskEntry::completed);
+                : subtasks.stream().allMatch(Entry::completed);
     }
 
     public static Builder builder() {
