@@ -54,7 +54,7 @@ public class ApplicationShell {
         try {
             output.write(object.toString().replace("\n", "+\n ").getBytes());
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
         }
     };
 

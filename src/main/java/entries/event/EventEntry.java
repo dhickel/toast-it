@@ -1,7 +1,9 @@
 package entries.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import enums.NotificationLevel;
 import util.JSON;
+import util.Util;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -12,18 +14,21 @@ import java.util.*;
 public record EventEntry(
         UUID uuid,
         String name,
-        Set<String> tags,
+        List<String> tags,
         LocalDateTime startTime,
         LocalDateTime endTime,
+        List<LocalDateTime> reminders,
+        NotificationLevel notificationLevel,
         boolean completed
 ) {
     public EventEntry asCompleted() {
-        return new EventEntry(uuid, name, tags, startTime, endTime, true);
+        return new EventEntry(uuid, name, tags, startTime, endTime, reminders, notificationLevel, true);
     }
 
-    public EventEntry{
+    public EventEntry {
         startTime = startTime.truncatedTo(ChronoUnit.MINUTES);
         endTime = endTime.truncatedTo(ChronoUnit.MINUTES);
+        reminders = reminders == null ? List.of() : reminders.stream().map(r -> r.truncatedTo(ChronoUnit.MINUTES)).toList();
     }
 
     public Stub getStub() throws JsonProcessingException {
@@ -33,6 +38,8 @@ public record EventEntry(
                 JSON.writeString(tags),
                 startTime.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond(),
                 endTime.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond(),
+                JSON.writeString(reminders.stream().map(Util::localToUnix).toList()),
+                notificationLevel,
                 completed
         );
     }
@@ -48,9 +55,11 @@ public record EventEntry(
     public static class Builder {
         private UUID uuid = UUID.randomUUID();
         private String name = "Unnamed";
-        private Set<String> tags = new HashSet<>();
+        private List<String> tags = new ArrayList<>();
         private LocalDateTime startTime = LocalDateTime.MAX;
         private LocalDateTime endTime = LocalDateTime.MAX;
+        private List<LocalDateTime> reminders;
+        private NotificationLevel notificationLevel;
         private boolean completed = false;
 
         public Builder() { }
@@ -68,13 +77,28 @@ public record EventEntry(
             return this;
         }
 
-        public Builder setTags(Set<String> tags) {
+        public Builder setTags(List<String> tags) {
             this.tags = tags;
             return this;
         }
 
         public Builder addTag(String tag) {
             this.tags.add(tag);
+            return this;
+        }
+
+        public Builder removeTag(String tag) {
+            this.tags.remove(tag);
+            return this;
+        }
+
+        public Builder addReminder(LocalDateTime reminderTIme) {
+            this.reminders.add(reminderTIme);
+            return this;
+        }
+
+        public Builder removeReminder(LocalDateTime reminderTime) {
+            this.reminders.remove(reminderTime);
             return this;
         }
 
@@ -93,13 +117,20 @@ public record EventEntry(
             return this;
         }
 
+        public Builder setNotificationLevel(NotificationLevel notificationLevel) {
+            this.notificationLevel = notificationLevel;
+            return this;
+        }
+
         public EventEntry build() {
             return new EventEntry(
                     uuid,
                     name,
-                    Collections.unmodifiableSet(tags),
+                    Collections.unmodifiableList(tags),
                     startTime,
                     endTime,
+                    reminders,
+                    notificationLevel,
                     completed
             );
         }
@@ -112,6 +143,8 @@ public record EventEntry(
             String tags,
             long startTime,
             long endTime,
+            String reminderTimes,
+            NotificationLevel notificationLevel,
             boolean completed
     ) { }
 }

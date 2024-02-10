@@ -208,10 +208,8 @@ public class DirectoryEval extends ShellEvaluator<DirectoryEval> {
         File dir;
         if (splitCmd.length <= 1) {
             dir = currPath.toFile();
-            System.out.println(dir);
         } else {
             dir = Path.of(splitCmd[1]).toFile();
-            System.out.println(dir);
         }
 
         if (!dir.exists() || !dir.isDirectory()) {
@@ -232,7 +230,7 @@ public class DirectoryEval extends ShellEvaluator<DirectoryEval> {
     public void launchNano(File file, Terminal terminal) {
         try {
             if (!file.canRead() || (!file.canWrite() && file.exists())) {
-                System.out.println("File cannot be read or written");
+                System.err.println("File cannot be read or written"); // TODO flush this to terminal
                 return;
             }
             Nano nano = new Nano(terminal, file);
@@ -245,7 +243,7 @@ public class DirectoryEval extends ShellEvaluator<DirectoryEval> {
             nano.setRestricted(true);
 
         } catch (Exception e) {
-            System.out.println("Error launching nano: " + e.getMessage());
+            System.err.println("Error launching nano: " + e.getMessage());
         }
     }
 

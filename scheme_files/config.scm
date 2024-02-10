@@ -28,24 +28,32 @@
 (define (load-shell-settings)
   (begin
     (set-static Settings `SHELL_BIND_ADDRESS "127.0.0.1")
-    (set-static Settings `SHELL_BIND_PORT 2233)
+    (set-static Settings `SHELL_BIND_PORT 22233)
     (set-static Settings `SHELL_USER "user")
     (set-static Settings `SHELL_PASSWORD "password")
     (set-static Settings `SHELL_KEY_PAIR "hostkey.ser")
     ))
 
-;(define (load-shell-modes)
-;  (let ((modes
-;          (List:of
-;            (ShellMode[DirectoryEval] "DIRECTORY" (Set [JString] :of "dir") (DirectoryEval) "⛘|▹ " "⛘▹▹ ")
-;            (ShellMode[SchemeEval] "SCHEME" (Set [JString] :of "scheme") (SchemeEval SchemeInstance) "λ|▹ " "λ▹▹ ")
-;            )))
-;    (set-static Settings `SHELL_MODES modes)))
+(define (load-event-settings)
+  (begin
+    (set-static Settings 'EVENT_LOOK_FORWARD_DAYS 8) ; Set to -1 for all
+    (set-static Settings 'EVENT_REFRESH_INV_MIN 240)
+    (set-static Settings `FADE_TIME_SEC (* 60 60))
+    ))
+
+(define (load-shell-modes)
+  (let ((modes
+          (list
+            (ShellMode[DirectoryEval] "DIRECTORY" (Set[JString]:of "dir") (DirectoryEval) "⛘|▹ " "⛘▹▹ ")
+            (ShellMode[SchemeEval] "SCHEME" (Set[JString]:of "scheme") (SchemeEval SchemeInstance) "λ|▹ " "λ▹▹ ")
+            )))
+    (set-static Settings `SHELL_MODES modes)))
 
 (define (load-settings)
   (begin
     (load-file-paths)
     (load-calendar-settings)
     (load-shell-settings)
-  ;;  (load-shell-modes)
+    (load-shell-modes)
+    (load-event-settings)
     ))

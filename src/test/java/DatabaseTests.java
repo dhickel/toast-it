@@ -6,6 +6,7 @@ import entries.task.SubTaskEntry;
 import entries.task.TaskEntry;
 import entries.text.TextEntry;
 import enums.EntryType;
+import enums.NotificationLevel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import util.Util;
@@ -27,7 +28,7 @@ public class DatabaseTests {
     final UUID noteUUID = UUID.fromString("44463dbe-d6ac-491f-97b2-0d9495049427");
     final UUID journalUUID = UUID.fromString("8570ac56-ac80-4882-ae1d-8314a9259c5d");
 
-    final Set<String> tags = Set.of("tag1", "tag2", "tag3");
+    final List<String> tags = List.of("tag1", "tag2", "tag3");
 
 
     private static  App app;
@@ -77,6 +78,8 @@ public class DatabaseTests {
                 tags,
                 LocalDateTime.now(),
                 LocalDateTime.now().plusHours(1),
+                List.of(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusHours(2)),
+                NotificationLevel.CRITICAL,
                 false
         );
 
@@ -87,6 +90,7 @@ public class DatabaseTests {
         assert ogStub.equals(dbStub);
 
         EventEntry fullEntry = db.getEventByUUID(eventUUID);
+
         assert event.equals(fullEntry);
     }
 
@@ -121,8 +125,6 @@ public class DatabaseTests {
         task.flushToDisk();
         TaskEntry readTask = db.getTaskByUUID(task.uuid());
         assert task.equals(readTask);
-        System.out.println();
-        System.out.println(readTask);
     }
 
     @Test
@@ -169,7 +171,7 @@ public class DatabaseTests {
                 List.of(taskUUID, task2UUID),
                 List.of(task, task2),
                 "This is a project",
-                Set.of("ProjectTag1", "ProjectTag2"),
+                List.of("ProjectTag1", "ProjectTag2"),
                 Path.of("/home/mindspice/code/java"),
                 LocalDateTime.now().plusMonths(1),
                 LocalDateTime.now(),

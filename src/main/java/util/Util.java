@@ -39,54 +39,6 @@ public class Util {
         return LocalDateTime.parse(dateTimeString, formatter);
     }
 
-//    public static void createYearMonthStructure(String rootPath) throws IOException {
-//        int currentYear = LocalDate.now().getYear();
-//        Path yearPath = Paths.get(rootPath, String.valueOf(currentYear));
-//
-//        // Create the year directory if it doesn't exist
-//        if (!Files.exists(yearPath)) {
-//            Files.createDirectories(yearPath);
-//        }
-//
-//        for (int month = 1; month <= 12; month++) {
-//            LocalDate date = LocalDate.of(currentYear, month, 1);
-//            String monthName = date.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH).toUpperCase();
-//            Path monthPath = yearPath.resolve(monthName);
-//
-//            if (!Files.exists(monthPath)) {
-//                System.out.println("Created Month:" + monthPath);
-//                Files.createDirectory(monthPath);
-//            }
-//        }
-//    }
-
-//    public static void createPath(EntryType entryType) throws IOException {
-//        Path rootPath = Paths.get(Settings.ROOT_PATH + File.separator + entryType.name());
-//
-//        if (!Files.exists(rootPath)) {
-//            files.cre
-//        }
-//
-//        int currentYear = LocalDate.now().getYear();
-//        Path yearPath = Paths.get(rootPath, String.valueOf(currentYear));
-//
-//        // Create the year directory if it doesn't exist
-//        if (!Files.exists(yearPath)) {
-//            Files.createDirectories(yearPath);
-//        }
-//
-//        for (int month = 1; month <= 12; month++) {
-//            LocalDate date = LocalDate.of(currentYear, month, 1);
-//            String monthName = date.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH).toUpperCase();
-//            Path monthPath = yearPath.resolve(monthName);
-//
-//            if (!Files.exists(monthPath)) {
-//                System.out.println("Created Month:" + monthPath);
-//                Files.createDirectory(monthPath);
-//            }
-//        }
-//    }
-
     public static Path getEntriesPath(EntryType entryType) throws IOException {
         var dateTime = LocalDateTime.now();
         var path = Paths.get(
@@ -103,6 +55,7 @@ public class Util {
     public static DateTimeFormatter dateTimeFormat() {
         return DateTimeFormatter.ofPattern("EEEE MMM dd @ HH:mm");
     }
+
 
     public static String formatNotification(String name, LocalDateTime dateTime) {
         return String.format("%s |  %s", name, dateTime.format(dateTimeFormat()));
@@ -121,6 +74,16 @@ public class Util {
         Instant inst = Instant.ofEpochSecond(unixTime);
         return LocalDateTime.ofInstant(inst, ZoneId.systemDefault()).truncatedTo(ChronoUnit.MINUTES);
     }
+
+    public static long localToUnix(LocalDateTime dataTime) {
+        return dataTime.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond();
+    }
+
+    public static long delayToDateTime(LocalDateTime dateTime) {
+        return Duration.between(LocalDateTime.now(), dateTime).toSeconds();
+    }
+
+
 
 
 }

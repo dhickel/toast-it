@@ -9,6 +9,8 @@ import util.Util;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 
 public class App {
@@ -17,6 +19,7 @@ public class App {
     private KawaInstance scheme;
     private ApplicationShell shell;
     private DBConnection dbConnection;
+    private ScheduledExecutorService exec;
 
     private final HashSet<String> tags = new HashSet<>();
 
@@ -42,18 +45,21 @@ public class App {
         }
         shell = new ApplicationShell(scheme);
         dbConnection = new DBConnection();
-
+        exec = Executors.newScheduledThreadPool(Settings.EXEC_THREADS);
     }
 
     public App init() throws IOException {
-
         scheme.defineObject("ShellInstance", shell);
         scheme.defineObject("AppInstance", this);
-        return instance();
+        return INSTANCE;
     }
 
     public DBConnection getDatabase() {
         return dbConnection;
+    }
+
+    public ScheduledExecutorService getExec() {
+        return exec;
     }
 
 

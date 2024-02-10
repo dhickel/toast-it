@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.mindspice</groupId>
-    <artifactId>mortal</artifactId>
+    <artifactId>toast-it</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -72,6 +72,7 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.42.0.0</version>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

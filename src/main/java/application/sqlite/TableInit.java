@@ -12,6 +12,8 @@ public class TableInit {
                 tags TEXT,  -- JSON array
                 start_time INTEGER,  -- Unix time
                 end_time INTEGER,    -- Unix time
+                reminders TEXT, -- JSON array
+                notification_level TEXT,
                 completed BOOLEAN
             );
             """;

@@ -26,7 +26,7 @@ public record ProjectEntry(
         @JsonIgnore
         List<TaskEntry> taskObjs,
         String description,
-        Set<String> tags,
+        List<String> tags,
         Path projectPath,
         LocalDateTime dueBy,
         LocalDateTime startedAt,
@@ -44,7 +44,7 @@ public record ProjectEntry(
         try {
             basePath = basePath == null ? Util.getEntriesPath(EntryType.PROJECT) : basePath;
         } catch (IOException e) {
-            System.out.println("Error creating path for: " + this);
+            System.err.println("Error creating path for: " + this);
         }
     }
 
@@ -68,10 +68,8 @@ public record ProjectEntry(
         // Always write meta file on change
         Path metaFilePath = basePath.resolve(uuid + ".project");
         try {
-            System.out.println(basePath);
             String metaJson = JSON.writePretty(this);
             Files.writeString(metaFilePath, metaJson);
-            System.out.println(JSON.loadObjectFromFile(metaFilePath, ProjectEntry.class).basePath);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to write project file: " + metaFilePath, e);
         }
@@ -152,7 +150,7 @@ public record ProjectEntry(
         private List<UUID> tasks = new ArrayList<>();
         private List<TaskEntry> taskObjs = new ArrayList<>();
         private String description = "";
-        private Set<String> tags = new HashSet<>();
+        private List<String> tags = new ArrayList<>();
         private Path projectPath = Path.of("/");
         private LocalDateTime dueBy = LocalDateTime.MAX;
         private LocalDateTime startedAt = LocalDateTime.MAX;
@@ -219,7 +217,7 @@ public record ProjectEntry(
             return this;
         }
 
-        public Builder setTags(Set<String> tags) {
+        public Builder setTags(List<String> tags) {
             this.tags = tags;
             return this;
         }
@@ -280,7 +278,7 @@ public record ProjectEntry(
                     Collections.unmodifiableList(tasks),
                     Collections.unmodifiableList(taskObjs),
                     description,
-                    Collections.unmodifiableSet(tags),
+                    Collections.unmodifiableList(tags),
                     projectPath,
                     dueBy,
                     startedAt,

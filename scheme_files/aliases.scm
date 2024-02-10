@@ -23,7 +23,7 @@
 ;; Application Classes
 (define-alias Calendar calendar.Calendar)
 (define-alias CalendarCell calendar.CalendarCell)
-(define-alias TaskEntry entries.task.FullTaskEntry)
+(define-alias TaskEntry entries.task.TaskEntry)
 (define-alias SubTaskEntry entries.task.SubTaskEntry)
 (define-alias TextEntry entries.text.TextEntry)
 (define-alias ProjectEntry entries.project.ProjectEntry)

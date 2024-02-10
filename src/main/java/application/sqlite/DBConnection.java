@@ -4,6 +4,7 @@ import entries.event.EventEntry;
 import entries.project.ProjectEntry;
 import entries.task.TaskEntry;
 import entries.text.TextEntry;
+import enums.NotificationLevel;
 import org.jline.terminal.spi.TerminalExt;
 import org.jline.utils.ShutdownHooks;
 import util.JSON;
@@ -14,6 +15,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -31,7 +35,7 @@ public class DBConnection {
             }
             connection = conn;
         } catch (SQLException e) {
-            throw new IllegalStateException("Exception encountered connecting to db. Error: " + e);
+            throw new IllegalStateException("Exception encountered connecting to database. Error: " + e);
         }
         if (!exists) {
             initDBTables();
@@ -68,7 +72,7 @@ public class DBConnection {
                 }
             }
         } catch (SQLException e) {
-            throw new IOException("SQL error returned for: " + uuid + " Error:" + e.getMessage());
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
         return JSON.loadObjectFromFile(metaPath, clazz);
     }
@@ -106,6 +110,8 @@ public class DBConnection {
                             JSON.arrayStringToSet(result.getString("tags")),
                             Util.unixToLocal(result.getLong("start_time")),
                             Util.unixToLocal(result.getLong("end_time")),
+                            JSON.arrayStringToDataTimeList(result.getString("reminders")),
+                            NotificationLevel.valueOf(result.getString("notification_level")),
                             result.getBoolean("completed")
                     );
                 } else {
@@ -113,7 +119,7 @@ public class DBConnection {
                 }
             }
         } catch (SQLException e) {
-            throw new IOException("SQL error returned for: " + uuid + " Error:" + e.getMessage());
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
         return event;
     }
@@ -135,6 +141,8 @@ public class DBConnection {
                             result.getString("tags"),
                             result.getLong("start_time"),
                             result.getLong("end_time"),
+                            result.getString("reminders"),
+                            NotificationLevel.valueOf(result.getString("notification_level")),
                             result.getBoolean("completed")
                     );
                 } else {
@@ -142,7 +150,7 @@ public class DBConnection {
                 }
             }
         } catch (SQLException e) {
-            throw new IOException("SQL error returned for: " + uuid + " Error:" + e.getMessage());
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
         return event;
     }
@@ -174,7 +182,7 @@ public class DBConnection {
                 }
             }
         } catch (SQLException e) {
-            throw new IOException("SQL error returned for: " + uuid + " Error:" + e.getMessage());
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
         return stub;
     }
@@ -208,7 +216,7 @@ public class DBConnection {
                 }
             }
         } catch (SQLException e) {
-            throw new IOException("SQL error returned for: " + uuid + " Error:" + e.getMessage());
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
 
         return stub;
@@ -235,7 +243,7 @@ public class DBConnection {
                 }
             }
         } catch (SQLException e) {
-            throw new IOException("SQL error returned for: " + uuid + " Error:" + e.getMessage());
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
 
         return stub;
@@ -249,6 +257,35 @@ public class DBConnection {
         return textEntrySelect(uuid, "journals");
     }
 
+    public List<EventEntry> getEvents(long threshold) throws IOException {
+        String query = threshold < 0
+                ? "SELECT * FROM events"
+                : String.format("SELECT * FROM events WHERE start_time < %d", threshold);
+
+        try (Statement ps = connection.createStatement()) {
+            List<EventEntry> events = new ArrayList<>();
+
+            try (ResultSet result = ps.executeQuery(query)) {
+                while (result.next()) {
+                    var event = new EventEntry(
+                            UUID.fromString(result.getString("uuid")),
+                            result.getString("name"),
+                            JSON.arrayStringToSet(result.getString("tags")),
+                            Util.unixToLocal(result.getLong("start_time")),
+                            Util.unixToLocal(result.getLong("end_time")),
+                            JSON.arrayStringToDataTimeList(result.getString("reminders")),
+                            NotificationLevel.valueOf(result.getString("notification_level")),
+                            result.getBoolean("completed")
+                    );
+                    events.add(event);
+                }
+            }
+            return events;
+        } catch (SQLException e) {
+            throw new IOException("Error querying events:" + e.getMessage());
+        }
+    }
+
     ////////////
     // INSERT //
     ///////////
@@ -256,13 +293,15 @@ public class DBConnection {
     public void upsertEvent(EventEntry eventEntry) throws IOException {
         EventEntry.Stub entry = eventEntry.getStub();
         String query = """
-                INSERT INTO events (uuid, name, tags, start_time, end_time, completed)
-                   VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO events (uuid, name, tags, start_time, end_time, reminders, notification_level, completed)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
                    name = excluded.name,
                    tags = excluded.tags,
                    start_time = excluded.start_time,
                    end_time = excluded.end_time,
+                   reminders = excluded.reminders,
+                   notification_level = excluded.notification_level,
                    completed = excluded.completed;
                 """;
 
@@ -272,11 +311,13 @@ public class DBConnection {
             ps.setString(3, entry.tags());
             ps.setLong(4, entry.startTime());
             ps.setLong(5, entry.endTime());
-            ps.setBoolean(6, entry.completed());
+            ps.setString(6, entry.reminderTimes());
+            ps.setString(7, entry.notificationLevel().name());
+            ps.setBoolean(8, entry.completed());
 
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new IOException("SQL error returned for: " + entry.uuid() + " Error:" + e.getMessage());
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", entry.uuid(), e.getMessage()));
         }
     }
 
@@ -310,7 +351,7 @@ public class DBConnection {
 
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new IOException("SQL error returned for: " + entry.uuid() + " Error:" + e.getMessage());
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", entry.uuid(), e.getMessage()));
         }
     }
 
@@ -349,7 +390,7 @@ public class DBConnection {
 
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new IOException("SQL error returned for: " + entry.uuid() + " Error:" + e.getMessage());
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", entry.uuid(), e.getMessage()));
         }
     }
 
@@ -374,7 +415,7 @@ public class DBConnection {
 
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new IOException("SQL error returned for: " + entry.uuid() + " Error:" + e.getMessage());
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", entry.uuid(), e.getMessage()));
         }
     }
 
@@ -386,5 +427,54 @@ public class DBConnection {
         upsertTextEntry(entry, "journals");
     }
 
+    ////////////
+    // DELETE //
+    ////////////
+
+    public void deletePastEventEntries(long threshold) throws IOException {
+        String query = "DELETE FROM events WHERE end_time < ?";
+
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setLong(1, threshold);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new IOException(
+                    String.format("SQL error returned for deleting events of: %d Error: %s", threshold, e.getMessage())
+            );
+        }
+    }
+
+    public void deleteEventByUUID(UUID uuid) throws IOException {
+        deleteByUUID("events", uuid);
+    }
+
+    public void deleteTaskByUUID(UUID uuid) throws IOException {
+        deleteByUUID("tasks", uuid);
+    }
+
+    public void deleteProjectByUUID(UUID uuid) throws IOException {
+        deleteByUUID("projects", uuid);
+    }
+
+    public void deleteNoteByUUID(UUID uuid) throws IOException {
+        deleteByUUID("notes", uuid);
+    }
+
+    public void deleteJournalByUUID(UUID uuid) throws IOException {
+        deleteByUUID("journals", uuid);
+    }
+
+    private void deleteByUUID(String table, UUID uuid) throws IOException {
+        String query = String.format("DELETE FROM %s WHERE uuid ?", table);
+
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setString(1, uuid.toString());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new IOException(
+                    String.format("SQL error returned for deleting entry of: %s Error: %s", uuid, e.getMessage())
+            );
+        }
+    }
 
 }

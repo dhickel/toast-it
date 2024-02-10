@@ -18,7 +18,7 @@ public record TextEntry(
         EntryType entryType,
         String name,
         LocalDateTime createdAt,
-        Set<String> tags,
+        List<String> tags,
         UUID uuid,
         Path basePath
 ) {
@@ -28,7 +28,7 @@ public record TextEntry(
         try {
             basePath = basePath == null ? Util.getEntriesPath(entryType) : basePath;
         } catch (IOException e) {
-            System.out.println("Error creating path for: " + this);
+            System.err.println("Error creating path for: " + this);
         }
     }
 
@@ -94,7 +94,7 @@ public record TextEntry(
         private final EntryType entryType;
         private String name = "Unnamed";
         private LocalDateTime createdAt = LocalDateTime.now();
-        private Set<String> tags = new HashSet<>();
+        private List<String> tags = new ArrayList<>();
         private UUID uuid = UUID.randomUUID();
         private Path basePath;
 
@@ -121,13 +121,18 @@ public record TextEntry(
             return this;
         }
 
-        public Builder setTags(Set<String> tags) {
+        public Builder setTags(List<String> tags) {
             this.tags = tags;
             return this;
         }
 
         public Builder addTag(String tag) {
             this.tags.add(tag);
+            return this;
+        }
+
+        public Builder removeTag(String tag) {
+            this.tags.remove(tag);
             return this;
         }
 
@@ -140,7 +145,7 @@ public record TextEntry(
                     entryType,
                     name,
                     createdAt,
-                    Collections.unmodifiableSet(tags),
+                    Collections.unmodifiableList(tags),
                     uuid,
                     basePath
             );

@@ -22,7 +22,7 @@ public record TaskEntry(
         List<SubTaskEntry> subtasks,
         String description,
         List<String> notes,
-        Set<String> tags,
+        List<String> tags,
         LocalDateTime dueBy,
         LocalDateTime startedAt,
         LocalDateTime completedAt,
@@ -37,7 +37,7 @@ public record TaskEntry(
         try {
             basePath = basePath == null ? Util.getEntriesPath(EntryType.TASK) : basePath;
         } catch (IOException e) {
-            System.out.println("Error creating path for: " + this);
+            System.err.println("Error creating path for: " + this);
         }
 
     }
@@ -142,7 +142,7 @@ public record TaskEntry(
         private List<SubTaskEntry> subtasks = new ArrayList<>();
         private String description = "";
         private List<String> notes = new ArrayList<>();
-        private Set<String> tags = new HashSet<>();
+        private List<String> tags = new ArrayList<>();
         private LocalDateTime dueBy = LocalDateTime.MAX;
         private LocalDateTime startedAt = LocalDateTime.MAX;
         private LocalDateTime completedAt = LocalDateTime.MAX;
@@ -216,7 +216,7 @@ public record TaskEntry(
             return this;
         }
 
-        public Builder setTags(Set<String> tags) {
+        public Builder setTags(List<String> tags) {
             this.tags = tags;
             return this;
         }
@@ -262,7 +262,7 @@ public record TaskEntry(
                     Collections.unmodifiableList(subtasks),
                     description,
                     Collections.unmodifiableList(notes),
-                    Collections.unmodifiableSet(tags),
+                    Collections.unmodifiableList(tags),
                     dueBy,
                     startedAt,
                     completedAt,
