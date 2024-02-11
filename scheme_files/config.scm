@@ -14,8 +14,14 @@
 (define (load-app-settings)
   (begin
     (set-static Settings 'EXEC_THREADS 1)
+    (set-static Settings 'DATE_INPUT_FORMAT "MM/dd/yy")
     ))
 
+
+(define (global-table-settings)
+  (begin
+    (set-static Settings 'TABLE_MAX_COLUMN_WIDTH 160)
+    ))
 
 (define (load-calendar-settings)
   (begin
@@ -44,8 +50,8 @@
 (define (load-shell-modes)
   (let ((modes
           (list
-            (ShellMode[DirectoryEval] "DIRECTORY" (Set[JString]:of "dir") (DirectoryEval) "⛘|▹ " "⛘▹▹ ")
-            (ShellMode[SchemeEval] "SCHEME" (Set[JString]:of "scheme") (SchemeEval SchemeInstance) "λ|▹ " "λ▹▹ ")
+            (ShellMode [DirectoryEval] "DIRECTORY" (Set[JString] :of "dir") (DirectoryEval) "⛘|▹ " "⛘▹▹ ")
+            (ShellMode [SchemeEval] "SCHEME" (Set[JString] :of "scheme") (SchemeEval SchemeInstance) "λ|▹ " "λ▹▹ ")
             )))
     (set-static Settings `SHELL_MODES modes)))
 

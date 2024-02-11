@@ -1,12 +1,12 @@
-package shell;
+package shell.evaluators;
 
 import io.mindspice.kawautils.wrappers.KawaInstance;
 import io.mindspice.kawautils.wrappers.KawaResult;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
+import shell.ShellCommand;
 
 import java.util.List;
-import java.util.Set;
 
 
 public class SchemeEval extends ShellEvaluator<SchemeEval> {

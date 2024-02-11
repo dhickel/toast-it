@@ -1,5 +1,7 @@
 package shell;
 
+import shell.evaluators.ShellEvaluator;
+
 import java.util.Set;
 import java.util.function.Predicate;
 

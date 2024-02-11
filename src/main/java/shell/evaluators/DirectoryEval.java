@@ -1,9 +1,9 @@
-package shell;
+package shell.evaluators;
 
 import org.jline.builtins.Nano;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
-import util.Util;
+import shell.ShellCommand;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,20 +13,24 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 
 
 public class DirectoryEval extends ShellEvaluator<DirectoryEval> {
     private Path currPath = Path.of(System.getProperty("user.dir")).toAbsolutePath();
 
-    public DirectoryEval() { }
+    public DirectoryEval() {
+        initBaseCommands();
+    }
 
-    @Override
-    public void init(Terminal terminal, LineReader lineReader) {
-        super.init(terminal, lineReader);
+    public DirectoryEval(List<ShellCommand<DirectoryEval>> userCommands) {
+        commands.addAll(userCommands);
+        initBaseCommands();
 
-        var commandInit = List.of(
+    }
+
+    public void initBaseCommands() {
+        List<ShellCommand<DirectoryEval>> commandInit = List.of(
                 ShellCommand.of("ls", DirectoryEval::listDir),
                 ShellCommand.of("nano", DirectoryEval::nano),
                 ShellCommand.of("mkdir", DirectoryEval::mkdir),

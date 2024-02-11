@@ -2,6 +2,7 @@ package util;
 
 import shell.ShellMode;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,8 @@ public class Settings {
 
     // Application
     public static int EXEC_THREADS;
+    public static String DATE_INPUT_FORMAT;
+    public static String TIME_INPUT_FORMAT;
 
     // Events
     public static int EVENT_LOOK_FORWARD_DAYS;
@@ -46,6 +49,9 @@ public class Settings {
     public static int CALENDER_HEADER_HEIGHT;
     public static int CALENDER_CELL_HEIGHT;
     public static int CALENDER_CELL_WIDTH;
+
+    // Global Table Settings
+    public static int TABLE_MAX_COLUMN_WIDTH;
 
 
 

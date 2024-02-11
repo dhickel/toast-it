@@ -14,6 +14,7 @@ import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.utils.InfoCmp;
+import shell.evaluators.DirectoryEval;
 import util.Settings;
 
 import java.io.File;

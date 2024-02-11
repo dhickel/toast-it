@@ -1,6 +1,7 @@
 package application;
 
 import application.sqlite.DBConnection;
+import entries.event.EventManager;
 import io.mindspice.kawautils.wrappers.KawaInstance;
 import shell.ApplicationShell;
 import util.Settings;
@@ -20,6 +21,9 @@ public class App {
     private ApplicationShell shell;
     private DBConnection dbConnection;
     private ScheduledExecutorService exec;
+
+    //Managers
+    private EventManager eventManager;
 
     private final HashSet<String> tags = new HashSet<>();
 
@@ -46,11 +50,13 @@ public class App {
         shell = new ApplicationShell(scheme);
         dbConnection = new DBConnection();
         exec = Executors.newScheduledThreadPool(Settings.EXEC_THREADS);
+        eventManager = new EventManager();
     }
 
     public App init() throws IOException {
         scheme.defineObject("ShellInstance", shell);
         scheme.defineObject("AppInstance", this);
+
         return INSTANCE;
     }
 
@@ -60,6 +66,10 @@ public class App {
 
     public ScheduledExecutorService getExec() {
         return exec;
+    }
+
+    public EventManager getEventManager() {
+        return eventManager;
     }
 
 

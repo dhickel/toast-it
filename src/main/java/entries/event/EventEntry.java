@@ -2,6 +2,7 @@ package entries.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import enums.NotificationLevel;
+import io.mindspice.mindlib.data.tuples.Pair;
 import util.JSON;
 import util.Util;
 
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.IntStream;
 
 
 public record EventEntry(
@@ -53,14 +55,14 @@ public record EventEntry(
     }
 
     public static class Builder {
-        private UUID uuid = UUID.randomUUID();
-        private String name = "Unnamed";
-        private List<String> tags = new ArrayList<>();
-        private LocalDateTime startTime = LocalDateTime.MAX;
-        private LocalDateTime endTime = LocalDateTime.MAX;
-        private List<LocalDateTime> reminders;
-        private NotificationLevel notificationLevel;
-        private boolean completed = false;
+        public UUID uuid = UUID.randomUUID();
+        public String name = "";
+        public List<String> tags = new ArrayList<>();
+        public LocalDateTime startTime = LocalDateTime.MAX;
+        public LocalDateTime endTime = LocalDateTime.MAX;
+        public List<LocalDateTime> reminders = new ArrayList<>();
+        public NotificationLevel notificationLevel = NotificationLevel.NORMAL;
+        public boolean completed = false;
 
         public Builder() { }
 
@@ -89,6 +91,11 @@ public record EventEntry(
 
         public Builder removeTag(String tag) {
             this.tags.remove(tag);
+            return this;
+        }
+
+        public Builder setReminders(List<LocalDateTime> reminders) {
+            this.reminders = reminders;
             return this;
         }
 
@@ -133,6 +140,29 @@ public record EventEntry(
                     notificationLevel,
                     completed
             );
+        }
+
+        public List<Pair<String, String>> toTableState() {
+            List<Pair<String, String>> rntList = new ArrayList<>();
+            if (!name.isEmpty()) {
+                rntList.add(Pair.of("Name", name));
+            }
+            if (!tags.isEmpty()) {
+                rntList.add(Pair.of("Tags", tags.toString()));
+            }
+            if (!startTime.equals(LocalDateTime.MAX)) {
+                rntList.add(Pair.of("Start Time", startTime.truncatedTo(ChronoUnit.MINUTES).toString()));
+            }
+            if (!endTime.equals(LocalDateTime.MAX)) {
+                rntList.add(Pair.of("End Time", endTime.truncatedTo(ChronoUnit.MINUTES).toString()));
+            }
+            if (!reminders.isEmpty()) {
+                IntStream.range(0, reminders.size()).forEach(i -> rntList.add(
+                        Pair.of(String.format("Reminder %d", i), reminders.get(i).truncatedTo(ChronoUnit.MINUTES).toString()))
+                );
+            }
+            rntList.add(Pair.of("Notify Level", notificationLevel.name()));
+            return rntList;
         }
     }
 
