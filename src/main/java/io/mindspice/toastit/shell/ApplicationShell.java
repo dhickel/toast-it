@@ -102,6 +102,9 @@ public class ApplicationShell {
                                         reader.setVariable(LineReader.SECONDARY_PROMPT_PATTERN, mode.altPromptSymbol());
                                         currMode = mode;
                                         completer.setMode(mode.mode());
+                                        terminal.puts(InfoCmp.Capability.clear_screen);
+                                        terminal.flush();
+                                        output.write(mode.modeInstance().modeDisplay.get().getBytes());
                                     }
                                 }
                             }

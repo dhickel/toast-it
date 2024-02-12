@@ -1,4 +1,5 @@
 import io.mindspice.toastit.App;
+import io.mindspice.toastit.notification.Reminder;
 import io.mindspice.toastit.sqlite.DBConnection;
 import io.mindspice.toastit.entries.event.EventEntry;
 import io.mindspice.toastit.entries.project.ProjectEntry;
@@ -77,8 +78,7 @@ public class DatabaseTests {
                 tags,
                 LocalDateTime.now(),
                 LocalDateTime.now().plusHours(1),
-                List.of(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusHours(2)),
-                NotificationLevel.CRITICAL,
+                List.of(new Reminder(LocalDateTime.now().minusDays(1), NotificationLevel.CRITICAL)),
                 UUID.randomUUID(),
                 false
         );
@@ -110,6 +110,8 @@ public class DatabaseTests {
                 LocalDateTime.now().plusMonths(1),
                 LocalDateTime.now(),
                 LocalDateTime.now().plusDays(20),
+                List.of(new Reminder(LocalDateTime.now().minusDays(1), NotificationLevel.CRITICAL),
+                        new Reminder(LocalDateTime.now().minusDays(2), NotificationLevel.LOW)),
                 taskUUID,
                 path
         );
@@ -145,6 +147,8 @@ public class DatabaseTests {
                 LocalDateTime.now().plusMonths(1),
                 LocalDateTime.now(),
                 LocalDateTime.now().plusDays(20),
+                List.of(new Reminder(LocalDateTime.now().minusDays(1), NotificationLevel.CRITICAL),
+                        new Reminder(LocalDateTime.now().minusDays(10), NotificationLevel.CRITICAL)),
                 taskUUID,
                 taskPath
         );
@@ -160,6 +164,8 @@ public class DatabaseTests {
                 LocalDateTime.now().plusMonths(1),
                 LocalDateTime.now(),
                 LocalDateTime.now().plusDays(20),
+                List.of(new Reminder(LocalDateTime.now().minusDays(1), NotificationLevel.CRITICAL),
+                        new Reminder(LocalDateTime.now().minusDays(2), NotificationLevel.LOW)),
                 taskUUID,
                 taskPath
         );
@@ -176,6 +182,8 @@ public class DatabaseTests {
                 LocalDateTime.now().plusMonths(1),
                 LocalDateTime.now(),
                 LocalDateTime.now().plusDays(40),
+                List.of(new Reminder(LocalDateTime.now().minusDays(1), NotificationLevel.CRITICAL),
+                        new Reminder(LocalDateTime.now().minusDays(3), NotificationLevel.NORMAL)),
                 projectUUID,
                 projectPath,
                 "code"
@@ -194,7 +202,9 @@ public class DatabaseTests {
         ProjectEntry readProject = db.getProjectByUUID(projectUUID);
 
         // Remove the task objects since they are not in the json
-        ProjectEntry woTasks = project.updateBuilder().setTaskObjs(List.of()).build();
+        var builder = project.updateBuilder();
+        builder.taskObjs = List.of();
+        ProjectEntry woTasks = builder.build();
         assertEquals(woTasks, readProject);
     }
 

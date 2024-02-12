@@ -4,12 +4,10 @@ import io.mindspice.toastit.App;
 import com.github.freva.asciitable.ColumnData;
 import io.mindspice.toastit.entries.event.EventEntry;
 import io.mindspice.toastit.entries.event.EventManager;
-import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.mindlib.data.tuples.Pair;
 import io.mindspice.toastit.shell.ShellCommand;
 import io.mindspice.toastit.util.TableConfig;
 import io.mindspice.toastit.util.TableUtil;
-import io.mindspice.toastit.util.Util;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -35,8 +33,48 @@ public class EventEval extends ShellEvaluator<EventEval> {
     public void initBaseCommands() {
         commands.addAll(List.of(
                 ShellCommand.of("new", EventEval::createNewEvent),
-                ShellCommand.of(Set.of("manage", "manager"), EventEval::manageEvents)
+                ShellCommand.of(Set.of("manage", "manager"), EventEval::manageEvents),
+                ShellCommand.of("remove past", EventEval::clearPast)
         ));
+    }
+
+    @Override
+    public String modeDisplay() {
+        String pastHeader = TableUtil.basicBox("Past Events");
+        String futureHeader = TableUtil.basicBox("Future Events");
+        String futureTable = futureEventTable();
+        System.out.println(eventManger.getFutureEvents());
+        return pastHeader +
+                "\n\n" + pastEventTable() +
+                "\n\n" + futureHeader +
+                "\n\n" + futureTable +
+                "\n\n" + printActions() + "\n\n";
+    }
+
+    public String pastEventTable() {
+        List<ColumnData<EventEntry>> viewColumns = TableConfig.EVENT_OVERVIEW_TABLE;
+        return TableUtil.generateTable(eventManger.getPastEvents(), viewColumns);
+    }
+
+    public String futureEventTable() {
+        List<ColumnData<EventEntry>> viewColumns = TableConfig.EVENT_OVERVIEW_TABLE;
+        return TableUtil.generateTable(eventManger.getFutureEvents(), viewColumns);
+    }
+
+    public String clearPast(String input) {
+        if (confirmPrompt("Clear Past Events?")) {
+            try {
+                eventManger.clearPastEvents();
+                clearAndPrint("!!! Cleared Past Events !!!\n");
+                return modeDisplay.get();
+            } catch (IOException e) {
+                System.err.println(Arrays.toString(e.getStackTrace()));
+                clearScreen();
+                printLnToTerminal(e.getMessage() + "\n");
+                return modeDisplay.get();
+            }
+        }
+        return modeDisplay.get();
     }
 
     public String createNewEvent(String input) {
@@ -72,20 +110,20 @@ public class EventEval extends ShellEvaluator<EventEval> {
             eventBuilder.reminders = promptReminder("Event Reminders", eventBuilder.startTime);
             clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + "\n");
 
-            //Notification Level
-            NotificationLevel notificationLevel;
-            do {
-                String userInput = promptInput("Notification Level (low, normal, critical): ");
-                notificationLevel = Util.enumMatch(NotificationLevel.values(), userInput);
-            } while (notificationLevel == null);
+            boolean confirmed = false;
+            while (!confirmed) {
+                confirmed = confirmPrompt("Finished?(no to edit)");
+                if (!confirmed) {
+                    updateEvent(eventBuilder.build());
+                }
+            }
 
-            eventBuilder.notificationLevel = notificationLevel;
             eventManger.addEvent(eventBuilder.build());
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + " \n");
-            return TableUtil.basicBox("Saved Event");
+            clearAndPrint("!!! Created Event !!!\n");
+            return modeDisplay.get();
 
         } catch (IOException e) {
-            System.err.println(e);
+            System.err.println(Arrays.toString(e.getStackTrace()));
             return e.getMessage();
         }
     }
@@ -120,17 +158,6 @@ public class EventEval extends ShellEvaluator<EventEval> {
                 eventBuilder.reminders = promptReminder("New Event Reminders", eventBuilder.startTime);
             }
 
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + " \n");
-            if (confirmPrompt("Update Notification Level?")) {
-                NotificationLevel notificationLevel;
-                do {
-                    String userInput = promptInput("New Notification Level (low, normal, critical): ");
-                    notificationLevel = Util.enumMatch(NotificationLevel.values(), userInput);
-                } while (notificationLevel == null);
-
-                eventBuilder.notificationLevel = notificationLevel;
-            }
-
             eventManger.updateEvent(eventBuilder.build());
             clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + " \n");
             return TableUtil.basicBox("Updated Event");
@@ -160,22 +187,26 @@ public class EventEval extends ShellEvaluator<EventEval> {
                   filter name <name>
                   filter tag <tag>
                   filter all
-                  exit\n
+                  exit
                 """;
 
         String output = "";
         try {
+            start:
             while (true) {
                 clearAndPrint(TableUtil.generateTable(filtered, TableConfig.EVENT_EDIT_TABLE));
                 printLnToTerminal(cmds);
                 if (!output.isEmpty()) {
-                    printLnToTerminal("> " + output + "\n");
+                    printLnToTerminal(output + "\n");
                     output = "";
                 }
 
                 String[] userInput = promptInput("Action: ").trim().split(" ");
                 switch (userInput[0]) {
-                    case String s when s.startsWith("exit") -> { return "Exited Event Manager"; }
+                    case String s when s.startsWith("exit") -> {
+                        clearAndPrint("");
+                        return modeDisplay.get();
+                    }
                     case String s when s.startsWith("new") -> {
                         createNewEvent("");
                         events = getIndexedEvents();
@@ -237,15 +268,20 @@ public class EventEval extends ShellEvaluator<EventEval> {
                             case String s1 when s1.startsWith("tag") -> {
                                 if (userInput.length < 3) {
                                     output = "Invalid input or index";
+                                    continue;
                                 }
-                                filtered = events.stream().filter(e -> e.second().tags().contains(userInput[2])).toList();
+                                filtered = events.stream()
+                                        .filter(e -> e.second().tags().contains(userInput[2]))
+                                        .toList();
                                 output = "Filtered";
                             }
                             case String s1 when s1.startsWith("name") -> {
                                 if (userInput.length < 3) {
                                     printLnToTerminal("Invalid input");
                                 }
-                                filtered = events.stream().filter(e -> e.second().name().contains(userInput[2])).toList();
+                                filtered = events.stream()
+                                        .filter(e -> e.second().name().toLowerCase().contains(userInput[2].toLowerCase()))
+                                        .toList();
                                 output = "Filtered";
                             }
                             case String s1 when s1.startsWith("all") -> {
@@ -261,9 +297,9 @@ public class EventEval extends ShellEvaluator<EventEval> {
                 }
             }
         } catch (Exception e) {
-            output = "Error: " + e.getMessage();
+            System.err.println(Arrays.toString(e.getStackTrace()));
         }
-        return "Exited Manager";
+        return modeDisplay.get();
     }
 
 

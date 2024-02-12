@@ -66,6 +66,11 @@ public class TableUtil {
         return " ".repeat(paddingStart) + input + " ".repeat(paddingEnd);
     }
 
+    public static String centerMultiLineString(String input, String table) {
+        List<String> strings = Arrays.asList(input.split("\n"));
+        return strings.stream().map(s -> centerString(s, table)).collect(Collectors.joining("\n"));
+    }
+
     public static String centerString(String input, String table) {
         int length = table.split("\n")[0].length();
         if (input.length() >= length) {
@@ -75,7 +80,6 @@ public class TableUtil {
         int totalPadding = length - input.length();
         int paddingStart = totalPadding / 2;
         int paddingEnd = totalPadding - paddingStart;
-
         return " ".repeat(paddingStart) + input + " ".repeat(paddingEnd);
     }
 

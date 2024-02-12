@@ -3,6 +3,7 @@ package io.mindspice.toastit.entries.event;
 import io.mindspice.toastit.App;
 import io.mindspice.mindlib.data.tuples.Pair;
 import io.mindspice.toastit.notification.Notify;
+import io.mindspice.toastit.notification.Reminder;
 import io.mindspice.toastit.util.DateTimeUtil;
 import io.mindspice.toastit.util.Settings;
 import io.mindspice.toastit.util.Tag;
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
 
 
 public class EventManager {
-    public Map<Pair<UUID, LocalDateTime>, ScheduledFuture<?>> scheduledEvents = new ConcurrentHashMap<>();
+    public Map<Pair<UUID, Reminder>, ScheduledFuture<?>> scheduledEvents = new ConcurrentHashMap<>();
     public final List<EventEntry> pastEvents = new CopyOnWriteArrayList<>();
     public final List<EventEntry> futureEvents = new CopyOnWriteArrayList<>();
     public final ScheduledExecutorService exec = App.instance().getExec();
@@ -91,7 +92,9 @@ public class EventManager {
     }
 
     public Consumer<EventManager> refreshEventNotifications = (self) -> {
+
         try {
+
             long lookFoward = Settings.EVENT_LOOK_FORWARD_DAYS == -1
                     ? -1
                     : DateTimeUtil.localToUnix(LocalDateTime.now().plusDays(Settings.EVENT_LOOK_FORWARD_DAYS));
@@ -102,14 +105,16 @@ public class EventManager {
                     .collect(Collectors.groupingBy(c -> c.endTime().isAfter(LocalDateTime.now())));
 
             pastEvents.clear();
-            pastEvents.addAll(mappedEvents.get(Boolean.FALSE).stream()
+            pastEvents.addAll(mappedEvents.getOrDefault(Boolean.FALSE, List.of()).stream()
+                    .peek(System.out::println)
                     .sorted(Comparator.comparing(EventEntry::startTime)).toList());
 
             futureEvents.clear();
-            futureEvents.addAll(mappedEvents.get(Boolean.TRUE).stream()
+            futureEvents.addAll(mappedEvents.getOrDefault(Boolean.TRUE, List.of()).stream()
                     .sorted(Comparator.comparing(EventEntry::startTime)).toList());
 
             futureEvents.forEach(this::createEventReminders);
+
 
         } catch (IOException e) {
             System.err.println("Failed to refresh events: " + e.getMessage());
@@ -121,14 +126,12 @@ public class EventManager {
                 ? Tag.Default()
                 : Settings.TAG_MAP.getOrDefault(event.tags().getFirst(), Tag.Default());
 
-        ProcessBuilder notification = Notify.newEventNotification(tag, event);
-
-        event.reminders().forEach(time -> {
-            Pair<UUID, LocalDateTime> reminderKey = Pair.of(event.uuid(), time);
-            if (scheduledEvents.containsKey(reminderKey) || time.isAfter(LocalDateTime.now())) {
+        event.reminders().forEach(reminder -> {
+            Pair<UUID, Reminder> reminderKey = Pair.of(event.uuid(), reminder);
+            if (scheduledEvents.containsKey(reminderKey) || reminder.time().isAfter(LocalDateTime.now())) {
                 return;
             }
-
+            ProcessBuilder notification = Notify.newEventNotification(tag, event, reminder.level());
             Runnable notifyTask = () -> {
                 try {
                     notification.start();
@@ -138,7 +141,7 @@ public class EventManager {
                 }
             };
 
-            var sf = exec.schedule(notifyTask, DateTimeUtil.delayToDateTime(time), TimeUnit.SECONDS);
+            var sf = exec.schedule(notifyTask, DateTimeUtil.delayToDateTime(reminder.time()), TimeUnit.SECONDS);
             scheduledEvents.put(reminderKey, sf);
         });
     }

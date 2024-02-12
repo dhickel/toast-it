@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.mindspice.toastit.notification.Reminder;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +19,7 @@ public class JSON {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final TypeReference<List<String>> stringList = new TypeReference<>() { };
     private static final TypeReference<List<Long>> longList = new TypeReference<>() { };
+    private static final TypeReference<List<Reminder.Stub>> reminderList = new TypeReference<>() { };
 
     static {
         objectMapper.registerModule(new JavaTimeModule());
@@ -50,6 +52,10 @@ public class JSON {
         return JSON.objectMapper.readValue(new File(path), clazz);
     }
 
+    public static <T> T read(String json, Class<T> clazz) throws JsonProcessingException {
+        return objectMapper.readValue(json, clazz);
+    }
+
     public static List<String> arrayStringToSet(String arrayString) {
         try {
             return objectMapper.readValue(arrayString, stringList);
@@ -64,7 +70,7 @@ public class JSON {
             List<Long> epochTimes = objectMapper.readValue(arrayString, longList);
             return epochTimes.stream().map(DateTimeUtil::unixToLocal).toList();
         } catch (JsonProcessingException e) {
-            System.err.println("Failed converint json of: " + arrayString + " to list");
+            System.err.println("Failed converting json of: " + arrayString + " to list");
             return List.of();
         }
     }
@@ -73,7 +79,16 @@ public class JSON {
         try {
             return objectMapper.readValue(arrayString, longList);
         } catch (JsonProcessingException e) {
-            System.err.println("Failed converint json of: " + arrayString + " to list");
+            System.err.println("Failed converting json of: " + arrayString + " to list");
+            return List.of();
+        }
+    }
+
+    public static List<Reminder> arrayStringToReminders(String arrayString) {
+        try {
+            return objectMapper.readValue(arrayString, reminderList).stream().map(Reminder.Stub::asFull).toList();
+        } catch (JsonProcessingException e) {
+            System.err.println("Failed converting json of: " + arrayString + " to list");
             return List.of();
         }
     }

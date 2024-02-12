@@ -48,7 +48,7 @@
   (begin
     (set-static Settings 'EVENT_LOOK_FORWARD_DAYS -1) ; Set to -1 for all
     (set-static Settings 'EVENT_REFRESH_INV_MIN 240)
-    (set-static Settings `FADE_TIME_SEC (* 60 60))
+    (set-static Settings `EVENT_NOTIFY_FADE_TIME_SEC (* 60 60))
     ))
 
 

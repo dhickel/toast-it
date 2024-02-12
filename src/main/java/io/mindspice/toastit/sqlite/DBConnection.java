@@ -1,11 +1,9 @@
 package io.mindspice.toastit.sqlite;
 
-import io.mindspice.toastit.App;
 import io.mindspice.toastit.entries.event.EventEntry;
 import io.mindspice.toastit.entries.project.ProjectEntry;
 import io.mindspice.toastit.entries.task.TaskEntry;
 import io.mindspice.toastit.entries.text.TextEntry;
-import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.toastit.util.DateTimeUtil;
 import io.mindspice.toastit.util.JSON;
 import io.mindspice.toastit.util.Settings;
@@ -51,9 +49,130 @@ public class DBConnection {
         System.out.println("Initialized and created tables");
     }
 
+    public Connection getConnection() {
+        return connection;
+    }
+
     ////////////
     // SELECT //
     ////////////
+
+    // Result -> Objects
+
+    private List<TaskEntry.Stub> execMapTaskStubs(PreparedStatement ps) throws IOException {
+        List<TaskEntry.Stub> tasks = new ArrayList<>();
+        try (ResultSet result = ps.executeQuery()) {
+            while (result.next()) {
+                var task = new TaskEntry.Stub(
+                        result.getString("uuid"),
+                        result.getString("name"),
+                        result.getBoolean("started"),
+                        result.getBoolean("completed"),
+                        result.getString("tags"),
+                        result.getLong("due_by"),
+                        result.getLong("started_at"),
+                        result.getLong("completed_at"),
+                        result.getString("reminders"),
+                        result.getString("meta_path")
+                );
+                tasks.add(task);
+            }
+            return tasks;
+        } catch (SQLException e) {
+            throw new IOException("SQL error returned Error: " + e.getMessage());
+        }
+    }
+
+    private List<EventEntry.Stub> execMapEventStubs(PreparedStatement ps) throws IOException {
+        List<EventEntry.Stub> events = new ArrayList<>();
+        try (ResultSet result = ps.executeQuery()) {
+            while (result.next()) {
+                var event = new EventEntry.Stub(
+                        result.getString("uuid"),
+                        result.getString("name"),
+                        result.getString("tags"),
+                        result.getLong("start_time"),
+                        result.getLong("end_time"),
+                        result.getString("reminders"),
+                        result.getString("linked_uuid"),
+                        result.getBoolean("completed")
+                );
+                events.add(event);
+            }
+            return events;
+        } catch (SQLException e) {
+            throw new IOException("SQL error returned Error: " + e.getMessage());
+        }
+    }
+
+    private List<EventEntry> execMapEvents(PreparedStatement ps) throws IOException {
+        List<EventEntry> events = new ArrayList<>();
+        try (ResultSet result = ps.executeQuery()) {
+            while (result.next()) {
+                var event = new EventEntry(
+                        UUID.fromString(result.getString("uuid")),
+                        result.getString("name"),
+                        JSON.arrayStringToSet(result.getString("tags")),
+                        DateTimeUtil.unixToLocal(result.getLong("start_time")),
+                        DateTimeUtil.unixToLocal(result.getLong("end_time")),
+                        JSON.arrayStringToReminders(result.getString("reminders")),
+                        UUID.fromString(result.getString("linked_uuid")),
+                        result.getBoolean("completed")
+                );
+                events.add(event);
+            }
+            return events;
+        } catch (SQLException e) {
+            throw new IOException("SQL error returned Error: " + e.getMessage());
+        }
+    }
+
+    private List<ProjectEntry.Stub> execMapProjectStubs(PreparedStatement ps) throws IOException {
+        List<ProjectEntry.Stub> projects = new ArrayList<>();
+        try (ResultSet result = ps.executeQuery()) {
+            while (result.next()) {
+                var project = new ProjectEntry.Stub(
+                        result.getString("uuid"),
+                        result.getString("name"),
+                        result.getBoolean("started"),
+                        result.getBoolean("completed"),
+                        result.getString("tags"),
+                        result.getLong("due_by"),
+                        result.getLong("started_at"),
+                        result.getLong("completed_at"),
+                        result.getString("reminders"),
+                        result.getString("meta_path"),
+                        result.getString("project_path"),
+                        result.getString("open_with")
+                );
+                projects.add(project);
+            }
+            return projects;
+        } catch (SQLException e) {
+            throw new IOException("SQL error returned Error: " + e.getMessage());
+        }
+    }
+
+    private List<TextEntry.Stub> execMapTextStubs(PreparedStatement ps) throws IOException {
+        List<TextEntry.Stub> entries = new ArrayList<>();
+        try (ResultSet result = ps.executeQuery()) {
+            while (result.next()) {
+                var text = new TextEntry.Stub(
+                        result.getString("uuid"),
+                        result.getString("name"),
+                        result.getLong("created_at"),
+                        result.getString("tags"),
+                        result.getString("meta_path")
+                );
+                entries.add(text);
+            }
+            return entries;
+        } catch (SQLException e) {
+            throw new IOException("SQL error returned Error: " + e.getMessage());
+        }
+    }
+
+    // Select Statements
 
     private <T> T genericMetaSelect(UUID uuid, String tableName, Class<T> clazz) throws IOException {
         String query = String.format("SELECT meta_path FROM %s WHERE uuid = ?", tableName);
@@ -92,134 +211,61 @@ public class DBConnection {
     }
 
     public EventEntry getEventByUUID(UUID uuid) throws IOException {
-        String query = """
-                SELECT * FROM events WHERE uuid = ?
-                """;
+        String query = "SELECT * FROM events WHERE uuid = ?";
 
         EventEntry event = null;
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, uuid.toString());
 
-            try (ResultSet result = ps.executeQuery()) {
-                if (result.next()) {
-                    event = new EventEntry(
-                            UUID.fromString(result.getString("uuid")),
-                            result.getString("name"),
-                            JSON.arrayStringToSet(result.getString("tags")),
-                            DateTimeUtil.unixToLocal(result.getLong("start_time")),
-                            DateTimeUtil.unixToLocal(result.getLong("end_time")),
-                            JSON.arrayStringToDataTimeList(result.getString("reminders")),
-                            NotificationLevel.valueOf(result.getString("notification_level")),
-                            UUID.fromString(result.getString("linked_uuid")),
-                            result.getBoolean("completed")
-                    );
-                } else {
-                    throw new IOException("No event result returned for: " + uuid);
-                }
-            }
-        } catch (SQLException e) {
+            List<EventEntry> events = execMapEvents(ps);
+            return events.isEmpty() ? null : events.getFirst();
+        } catch (
+                SQLException e) {
             throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
-        return event;
     }
 
     public EventEntry.Stub getEventStubByUUID(UUID uuid) throws IOException {
-        String query = """
-                SELECT * FROM events WHERE uuid = ?
-                """;
+        String query = "SELECT * FROM events WHERE uuid = ?";
 
         EventEntry.Stub event = null;
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, uuid.toString());
 
-            try (ResultSet result = ps.executeQuery()) {
-                if (result.next()) {
-                    event = new EventEntry.Stub(
-                            result.getString("uuid"),
-                            result.getString("name"),
-                            result.getString("tags"),
-                            result.getLong("start_time"),
-                            result.getLong("end_time"),
-                            result.getString("reminders"),
-                            NotificationLevel.valueOf(result.getString("notification_level")),
-                            result.getString("linked_uuid"),
-                            result.getBoolean("completed")
-                    );
-                } else {
-                    throw new IOException("No event result returned for: " + uuid);
-                }
-            }
+            List<EventEntry.Stub> events = execMapEventStubs(ps);
+            return events.isEmpty() ? null : events.getFirst();
         } catch (SQLException e) {
             throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
-        return event;
     }
 
     public TaskEntry.Stub getTaskStubByUUID(UUID uuid) throws IOException {
-        String query = """
-                SELECT * FROM tasks WHERE uuid = ?
-                """;
+        String query = "SELECT * FROM tasks WHERE uuid = ?";
 
         TaskEntry.Stub stub = null;
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, uuid.toString());
 
-            try (ResultSet result = ps.executeQuery()) {
-                if (result.next()) {
-                    stub = new TaskEntry.Stub(
-                            result.getString("uuid"),
-                            result.getString("name"),
-                            result.getBoolean("started"),
-                            result.getBoolean("completed"),
-                            result.getString("tags"),
-                            result.getLong("due_by"),
-                            result.getLong("started_at"),
-                            result.getLong("completed_at"),
-                            result.getString("meta_path")
-                    );
-                } else {
-                    throw new IOException("No task result returned for: " + uuid);
-                }
-            }
+            List<TaskEntry.Stub> tasks = execMapTaskStubs(ps);
+            return tasks.isEmpty() ? null : tasks.getFirst();
         } catch (SQLException e) {
             throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
-        return stub;
     }
 
     public ProjectEntry.Stub getProjectStubByUUID(UUID uuid) throws IOException {
-        String query = """
-                SELECT * FROM projects WHERE uuid = ?
-                """;
+        String query = "SELECT * FROM projects WHERE uuid = ?";
 
         ProjectEntry.Stub stub = null;
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, uuid.toString());
 
-            try (ResultSet result = ps.executeQuery()) {
-                if (result.next()) {
-                    stub = new ProjectEntry.Stub(
-                            result.getString("uuid"),
-                            result.getString("name"),
-                            result.getBoolean("started"),
-                            result.getBoolean("completed"),
-                            result.getString("tags"),
-                            result.getLong("due_by"),
-                            result.getLong("started_at"),
-                            result.getLong("completed_at"),
-                            result.getString("meta_path"),
-                            result.getString("project_path"),
-                            result.getString("open_with")
-                    );
-                } else {
-                    throw new IOException("No project result returned for: " + uuid);
-                }
-            }
+            List<ProjectEntry.Stub> projects = execMapProjectStubs(ps);
+            return projects.isEmpty() ? null : projects.getFirst();
+
         } catch (SQLException e) {
             throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
-
-        return stub;
     }
 
     private TextEntry.Stub textEntrySelect(UUID uuid, String table) throws IOException {
@@ -229,24 +275,11 @@ public class DBConnection {
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, uuid.toString());
 
-            try (ResultSet result = ps.executeQuery()) {
-                if (result.next()) {
-                    stub = new TextEntry.Stub(
-                            result.getString("uuid"),
-                            result.getString("name"),
-                            result.getLong("created_at"),
-                            result.getString("tags"),
-                            result.getString("meta_path")
-                    );
-                } else {
-                    throw new IOException("No journal result returned for: " + uuid);
-                }
-            }
+            List<TextEntry.Stub> entries = execMapTextStubs(ps);
+            return entries.isEmpty() ? null : entries.getFirst();
         } catch (SQLException e) {
             throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
         }
-
-        return stub;
     }
 
     public TextEntry.Stub getNoteStubByUUID(UUID uuid) throws IOException {
@@ -262,47 +295,38 @@ public class DBConnection {
                 ? "SELECT * FROM events"
                 : String.format("SELECT * FROM events WHERE start_time < %d", threshold);
 
-        try (Statement ps = connection.createStatement()) {
-            List<EventEntry> events = new ArrayList<>();
-
-            try (ResultSet result = ps.executeQuery(query)) {
-                while (result.next()) {
-                    var event = new EventEntry(
-                            UUID.fromString(result.getString("uuid")),
-                            result.getString("name"),
-                            JSON.arrayStringToSet(result.getString("tags")),
-                            DateTimeUtil.unixToLocal(result.getLong("start_time")),
-                            DateTimeUtil.unixToLocal(result.getLong("end_time")),
-                            JSON.arrayStringToDataTimeList(result.getString("reminders")),
-                            NotificationLevel.valueOf(result.getString("notification_level")),
-                            UUID.fromString(result.getString("linked_uuid")),
-                            result.getBoolean("completed")
-                    );
-                    events.add(event);
-                }
-            }
-            return events;
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            return execMapEvents(ps);
         } catch (SQLException e) {
             throw new IOException("Error querying events:" + e.getMessage());
         }
     }
 
-    ////////////
-    // INSERT //
-    ///////////
+    public List<TaskEntry.Stub> getActiveTasks() throws IOException {
+        String query = " SELECT * FROM tasks WHERE started = true";
+
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            return execMapTaskStubs(ps);
+        } catch (SQLException e) {
+            throw new IOException("Error querying tasks:" + e.getMessage());
+        }
+    }
+
+////////////
+// INSERT //
+///////////
 
     public void upsertEvent(EventEntry eventEntry) throws IOException {
         EventEntry.Stub entry = eventEntry.getStub();
         String query = """
-                INSERT INTO events (uuid, name, tags, start_time, end_time, reminders, notification_level, linked_uuid, completed)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO events (uuid, name, tags, start_time, end_time, reminders, linked_uuid, completed)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
                    name = excluded.name,
                    tags = excluded.tags,
                    start_time = excluded.start_time,
                    end_time = excluded.end_time,
                    reminders = excluded.reminders,
-                   notification_level = excluded.notification_level,
                    linked_uuid = excluded.linked_uuid,
                    completed = excluded.completed;
                 """;
@@ -313,10 +337,9 @@ public class DBConnection {
             ps.setString(3, entry.tags());
             ps.setLong(4, entry.startTime());
             ps.setLong(5, entry.endTime());
-            ps.setString(6, entry.reminderTimes());
-            ps.setString(7, entry.notificationLevel().name());
-            ps.setString(8,entry.linkedUUID());
-            ps.setBoolean(9, entry.completed());
+            ps.setString(6, entry.reminders());
+            ps.setString(7, entry.linkedUUID());
+            ps.setBoolean(8, entry.completed());
 
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -327,8 +350,9 @@ public class DBConnection {
     public void upsertTask(TaskEntry taskEntry) throws IOException {
         TaskEntry.Stub entry = taskEntry.getStub();
         String query = """
-                INSERT INTO tasks (uuid, name, started, completed, tags, due_by, started_at, completed_at, meta_path)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tasks (uuid, name, started, completed, tags, due_by, 
+                    started_at, completed_at, reminders, meta_path)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
                    name = excluded.name,
                    tags = excluded.tags,
@@ -338,6 +362,7 @@ public class DBConnection {
                    due_by = excluded.due_by,
                    started_at = excluded.started_at,
                    completed_at = excluded.completed_at,
+                   reminders = excluded.reminders,
                    meta_path = excluded.meta_path;
                 """;
 
@@ -350,7 +375,8 @@ public class DBConnection {
             ps.setLong(6, entry.dueBy());
             ps.setLong(7, entry.startedAt());
             ps.setLong(8, entry.completedAt());
-            ps.setString(9, entry.metaPath());
+            ps.setString(9, entry.reminders());
+            ps.setString(10, entry.metaPath());
 
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -362,8 +388,8 @@ public class DBConnection {
         ProjectEntry.Stub entry = projectEntry.getStub();
         String query = """
                 INSERT INTO projects (uuid, name, started, completed, tags, due_by,
-                    started_at, completed_at, meta_path, project_path, open_with)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    started_at, completed_at, reminders, meta_path, project_path, open_with)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
                    name = excluded.name,
                    tags = excluded.tags,
@@ -373,6 +399,7 @@ public class DBConnection {
                    due_by = excluded.due_by,
                    started_at = excluded.started_at,
                    completed_at = excluded.completed_at,
+                   reminders = excluded.reminders,
                    meta_path = excluded.meta_path,
                    project_path = excluded.project_path,
                    open_with = excluded.open_with;
@@ -387,9 +414,10 @@ public class DBConnection {
             ps.setLong(6, entry.dueBy());
             ps.setLong(7, entry.startedAt());
             ps.setLong(8, entry.completedAt());
-            ps.setString(9, entry.metaPath());
-            ps.setString(10, entry.projectPath());
-            ps.setString(11, entry.openWith());
+            ps.setString(9, entry.reminders());
+            ps.setString(10, entry.metaPath());
+            ps.setString(11, entry.projectPath());
+            ps.setString(12, entry.openWith());
 
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -430,9 +458,9 @@ public class DBConnection {
         upsertTextEntry(entry, "journals");
     }
 
-    ////////////
-    // DELETE //
-    ////////////
+////////////
+// DELETE //
+////////////
 
     public void deletePastEventEntries(long threshold) throws IOException {
         String query = "DELETE FROM events WHERE end_time < ?";
@@ -446,7 +474,6 @@ public class DBConnection {
             );
         }
     }
-
 
     public void deleteEventByUUID(UUID uuid) throws IOException {
         deleteByUUID("events", uuid);

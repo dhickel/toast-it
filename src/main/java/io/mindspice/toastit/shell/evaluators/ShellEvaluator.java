@@ -1,5 +1,7 @@
 package io.mindspice.toastit.shell.evaluators;
 
+import io.mindspice.toastit.enums.NotificationLevel;
+import io.mindspice.toastit.notification.Reminder;
 import io.mindspice.toastit.util.DateTimeUtil;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
@@ -16,12 +18,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 public abstract class ShellEvaluator<T> {
     public Terminal terminal;
     public LineReader lineReader;
     public List<ShellCommand<T>> commands = new ArrayList<>();
+    public Supplier<String> modeDisplay = this::modeDisplay;
+
+    protected abstract String modeDisplay();
+
+    public void setModeDisplay(Supplier<String> displaySupplier) {
+        modeDisplay = displaySupplier;
+    }
 
     public void init(Terminal terminal, LineReader reader) {
         this.terminal = terminal;
@@ -70,6 +81,12 @@ public abstract class ShellEvaluator<T> {
             }
         }
         return false;
+    }
+
+    public String printActions() {
+        return "Actions:\n" + commands.stream()
+                .map(c -> String.format("  %s", String.join(" | ", c.aliases())))
+                .collect(Collectors.joining("\n")) + "\n";
     }
 
     public void clearAndPrint(String s) throws IOException {
@@ -191,8 +208,8 @@ public abstract class ShellEvaluator<T> {
         }
     }
 
-    public List<LocalDateTime> promptReminder(String header, LocalDateTime eventTime) {
-        List<LocalDateTime> reminders = new ArrayList<>(2);
+    public List<Reminder> promptReminder(String header, LocalDateTime eventTime) {
+        List<Reminder> reminders = new ArrayList<>(2);
         List<String> valid = List.of("day", "days", "hr", "hour", "hours", "min", "minute", "minutes");
 
         printLnToTerminal(header);
@@ -211,28 +228,32 @@ public abstract class ShellEvaluator<T> {
             }
 
             int interval = Integer.parseInt(splitInput[0]);
+            LocalDateTime rTime;
             switch (splitInput[1].toLowerCase()) {
-                case String s when s.startsWith("day") -> {
-                    LocalDateTime dt = eventTime.minusDays(interval).truncatedTo(ChronoUnit.MINUTES);
-                    boolean confirm = confirmPrompt(String.format("Confirm Reminder: %s", DateTimeUtil.printDateTimeFull(dt)));
-                    if (confirm) { reminders.add(dt); }
-                }
-
-                case String s when s.startsWith("hr") || s.startsWith("hour") -> {
-                    LocalDateTime dt = eventTime.minusHours(interval);
-                    boolean confirm = confirmPrompt(String.format("Confirm Reminder: %s", DateTimeUtil.printDateTimeFull(dt)));
-                    if (confirm) { reminders.add(dt); }
-                }
-
-                case String s when s.startsWith("min") -> {
-                    LocalDateTime dt = eventTime.minusMinutes(interval);
-                    boolean confirm = confirmPrompt(String.format("Confirm Reminder: %s", DateTimeUtil.printDateTimeFull(dt)));
-                    if (confirm) { reminders.add(dt); }
-                }
-
+                case String s when s.startsWith("day") -> rTime = eventTime.minusDays(interval).truncatedTo(ChronoUnit.MINUTES);
+                case String s when s.startsWith("hr") || s.startsWith("hour") ->
+                        rTime = eventTime.minusHours(interval).truncatedTo(ChronoUnit.MINUTES);
+                case String s when s.startsWith("min") -> rTime = eventTime.minusMinutes(interval).truncatedTo(ChronoUnit.MINUTES);
                 default -> {
                     printLnToTerminal("Invalid Input, Valid intervals: \"# day\", \"# hr\", \"# min\" \"exit\" ex. \"30 min\" ");
+                    continue;
                 }
+            }
+
+            NotificationLevel nLevel;
+            do {
+                String userInput = promptInput("Notification Level (low, normal, critical): ");
+                nLevel = Util.enumMatch(NotificationLevel.values(), userInput);
+                if (nLevel == null) {
+                    printLnToTerminal("Invalid Input");
+                }
+            } while (nLevel == null);
+
+            boolean confirm = confirmPrompt(
+                    String.format("Confirm Reminder: %s | %s", DateTimeUtil.printDateTimeFull(rTime), nLevel)
+            );
+            if (confirm) {
+                reminders.add(new Reminder(rTime, nLevel));
             }
         }
     }

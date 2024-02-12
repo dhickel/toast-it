@@ -18,6 +18,11 @@ import java.util.List;
 public class DirectoryEval extends ShellEvaluator<DirectoryEval> {
     private Path currPath = Path.of(System.getProperty("user.dir")).toAbsolutePath();
 
+
+    @Override
+    public String modeDisplay() {
+        return "Entered Directory Mode";
+    }
     public DirectoryEval() {
         initBaseCommands();
     }

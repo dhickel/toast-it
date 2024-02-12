@@ -13,7 +13,6 @@ public class TableInit {
                 start_time INTEGER,  -- Unix time
                 end_time INTEGER,    -- Unix time
                 reminders TEXT, -- JSON array
-                notification_level TEXT,
                 linked_uuid TEXT,
                 completed BOOLEAN
             );
@@ -29,6 +28,7 @@ public class TableInit {
                 due_by INTEGER, -- Unix time
                 started_at INTEGER,-- Unix time
                 completed_at INTEGER,-- Unix time
+                reminders TEXT, -- JSON array
                 meta_path TEXT
             );
             """;
@@ -43,6 +43,7 @@ public class TableInit {
                 due_by INTEGER, -- Unix time
                 started_at INTEGER,-- Unix time
                 completed_at INTEGER,-- Unix time
+                reminders TEXT, --JSON array
                 meta_path TEXT,
                 project_path TEXT,
                 open_with TEST

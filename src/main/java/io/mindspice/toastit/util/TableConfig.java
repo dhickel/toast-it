@@ -9,4 +9,5 @@ import java.util.List;
 
 public class TableConfig {
     public static List<ColumnData<Pair<Integer, EventEntry>>> EVENT_EDIT_TABLE;
+    public static List<ColumnData<EventEntry>> EVENT_OVERVIEW_TABLE;
 }

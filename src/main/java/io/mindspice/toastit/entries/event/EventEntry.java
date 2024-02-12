@@ -5,6 +5,7 @@ import io.mindspice.toastit.entries.Entry;
 import io.mindspice.toastit.enums.EntryType;
 import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.mindlib.data.tuples.Pair;
+import io.mindspice.toastit.notification.Reminder;
 import io.mindspice.toastit.util.DateTimeUtil;
 import io.mindspice.toastit.util.JSON;
 import io.mindspice.toastit.util.Util;
@@ -22,19 +23,17 @@ public record EventEntry(
         List<String> tags,
         LocalDateTime startTime,
         LocalDateTime endTime,
-        List<LocalDateTime> reminders,
-        NotificationLevel notificationLevel,
+        List<Reminder> reminders,
         UUID linkedUUID,
         boolean completed
 ) implements Entry {
     public EventEntry asCompleted() {
-        return new EventEntry(uuid, name, tags, startTime, endTime, reminders, notificationLevel, linkedUUID, true);
+        return new EventEntry(uuid, name, tags, startTime, endTime, reminders, linkedUUID, true);
     }
 
     public EventEntry {
         startTime = startTime.truncatedTo(ChronoUnit.MINUTES);
         endTime = endTime.truncatedTo(ChronoUnit.MINUTES);
-        reminders = reminders == null ? List.of() : reminders.stream().map(r -> r.truncatedTo(ChronoUnit.MINUTES)).toList();
         linkedUUID = linkedUUID == null ? UUID.fromString("00000000-0000-0000-0000-000000000000") : linkedUUID;
     }
 
@@ -45,8 +44,7 @@ public record EventEntry(
                 JSON.writeString(tags),
                 startTime.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond(),
                 endTime.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond(),
-                JSON.writeString(reminders.stream().map(DateTimeUtil::localToUnix).toList()),
-                notificationLevel,
+                JSON.writeString(reminders.stream().map(Reminder::getStub).toList()),
                 linkedUUID.toString(),
                 completed
         );
@@ -76,9 +74,8 @@ public record EventEntry(
         public List<String> tags = new ArrayList<>();
         public LocalDateTime startTime = LocalDateTime.MAX;
         public LocalDateTime endTime = LocalDateTime.MAX;
-        public List<LocalDateTime> reminders = new ArrayList<>();
-        public NotificationLevel notificationLevel = null;
-        public UUID linkedUUID;
+        public List<Reminder> reminders = new ArrayList<>();
+        public UUID linkedUUID = Util.NULL_UUID;
         public boolean completed = false;
 
         public Builder() { }
@@ -90,7 +87,6 @@ public record EventEntry(
             this.startTime = e.startTime;
             this.endTime = e.endTime;
             this.reminders = e.reminders;
-            this.notificationLevel = e.notificationLevel;
             this.linkedUUID = e.linkedUUID;
             this.completed = e.completed;
         }
@@ -103,8 +99,7 @@ public record EventEntry(
                     startTime,
                     endTime,
                     reminders,
-                    notificationLevel,
-                    linkedUUID == null ? Util.NULL_UUID : linkedUUID,
+                    linkedUUID,
                     completed
             );
         }
@@ -126,11 +121,8 @@ public record EventEntry(
             }
             if (!reminders.isEmpty()) {
                 IntStream.range(0, reminders.size()).forEach(i -> rntList.add(
-                        Pair.of(String.format("Reminder %d", i), reminders.get(i).truncatedTo(ChronoUnit.MINUTES).toString()))
-                );
-            }
-            if (notificationLevel != null) {
-                rntList.add(Pair.of("Notify Level", notificationLevel.name()));
+                        Pair.of(String.format("Reminder %d", i), reminders.get(i).toString())
+                ));
             }
             return rntList;
         }
@@ -143,8 +135,7 @@ public record EventEntry(
             String tags,
             long startTime,
             long endTime,
-            String reminderTimes,
-            NotificationLevel notificationLevel,
+            String reminders,
             String linkedUUID,
             boolean completed
     ) { }

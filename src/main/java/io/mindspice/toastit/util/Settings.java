@@ -1,6 +1,7 @@
 package io.mindspice.toastit.util;
 
 import com.github.freva.asciitable.HorizontalAlign;
+import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.toastit.shell.ShellMode;
 
 import java.util.List;
@@ -34,7 +35,12 @@ public class Settings {
     // Events
     public static int EVENT_LOOK_FORWARD_DAYS;
     public static int EVENT_REFRESH_INV_MIN;
-    public static int FADE_TIME_SEC;
+    public static int EVENT_NOTIFY_FADE_TIME_SEC;
+
+    // TASKS
+    public static int TASK_REFRESH_INV_MIN;
+    public static NotificationLevel TASK_OVER_DUE_NOTIFY_LEVEL;
+    public static int TASK_NOTIFY_FADE_TIME_SEC;
 
     // Shell Config
     public static String SHELL_BIND_ADDRESS;

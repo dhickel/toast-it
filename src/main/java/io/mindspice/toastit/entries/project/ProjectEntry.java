@@ -6,6 +6,7 @@ import io.mindspice.toastit.entries.Entry;
 import io.mindspice.toastit.entries.task.TaskEntry;
 import io.mindspice.toastit.entries.task.Task;
 import io.mindspice.toastit.enums.EntryType;
+import io.mindspice.toastit.notification.Reminder;
 import io.mindspice.toastit.util.JSON;
 import io.mindspice.toastit.util.Util;
 
@@ -32,6 +33,7 @@ public record ProjectEntry(
         LocalDateTime dueBy,
         LocalDateTime startedAt,
         LocalDateTime completedAt,
+        List<Reminder> reminders,
         UUID uuid,
         Path basePath,
         String openWith
@@ -86,6 +88,7 @@ public record ProjectEntry(
                 dueBy.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond(),
                 startedAt.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond(),
                 completedAt.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond(),
+                JSON.writeString(reminders.stream().map(Reminder::getStub).toList()),
                 getFile().toString(),
                 projectPath.toString(),
                 openWith
@@ -100,7 +103,7 @@ public record ProjectEntry(
     public ProjectEntry asCompleted(LocalDateTime time) {
         return new ProjectEntry(
                 name, started, true, tasks, taskObjs, description, tags,
-                projectPath, dueBy, startedAt, time, uuid, basePath, openWith
+                projectPath, dueBy, startedAt, time, reminders, uuid, basePath, openWith
         );
     }
 
@@ -108,7 +111,7 @@ public record ProjectEntry(
     public ProjectEntry asStarted(LocalDateTime time) {
         return new ProjectEntry(
                 name, true, completed, tasks, taskObjs, description, tags,
-                projectPath, dueBy, time, completedAt, uuid, basePath, openWith
+                projectPath, dueBy, time, completedAt, reminders, uuid, basePath, openWith
         );
     }
 
@@ -150,20 +153,21 @@ public record ProjectEntry(
     }
 
     public static class Builder {
-        private String name = "Unnamed";
-        private boolean started = false;
-        private boolean completed = false;
-        private List<UUID> tasks = new ArrayList<>();
-        private List<TaskEntry> taskObjs = new ArrayList<>();
-        private String description = "";
-        private List<String> tags = new ArrayList<>();
-        private Path projectPath = Path.of("/");
-        private LocalDateTime dueBy = LocalDateTime.MAX;
-        private LocalDateTime startedAt = LocalDateTime.MAX;
-        private LocalDateTime completedAt = LocalDateTime.MAX;
-        private UUID uuid = UUID.randomUUID();
-        private Path basePath;
-        private String openWith = "";
+        public String name = "Unnamed";
+        public boolean started = false;
+        public boolean completed = false;
+        public List<UUID> tasks = new ArrayList<>();
+        public List<TaskEntry> taskObjs = new ArrayList<>();
+        public String description = "";
+        public List<String> tags = new ArrayList<>();
+        public Path projectPath = Path.of("/");
+        public LocalDateTime dueBy = LocalDateTime.MAX;
+        public LocalDateTime startedAt = LocalDateTime.MAX;
+        public LocalDateTime completedAt = LocalDateTime.MAX;
+        public List<Reminder> reminders;
+        public UUID uuid = UUID.randomUUID();
+        public Path basePath;
+        public String openWith = "";
 
         public Builder() { }
 
@@ -179,98 +183,10 @@ public record ProjectEntry(
             this.dueBy = p.dueBy;
             this.startedAt = p.startedAt;
             this.completedAt = p.completedAt;
+            this.reminders = p.reminders;
             this.uuid = p.uuid;
             this.basePath = p.basePath;
             this.openWith = p.openWith;
-        }
-
-        public Builder setName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder setCompleted(boolean completed) {
-            this.completed = completed;
-            return this;
-        }
-
-        public boolean started() {
-            return started;
-        }
-
-        public Builder setTasks(List<UUID> tasks) {
-            this.tasks = tasks;
-            return this;
-        }
-
-        public Builder addTask(UUID task) {
-            this.tasks.add(task);
-            return this;
-        }
-
-        public Builder removeTask(UUID task) {
-            this.tasks.remove(task);
-            return this;
-        }
-
-        public Builder setTaskObjs(List<TaskEntry> tasks){
-            this.taskObjs = tasks;
-            return this;
-        }
-
-        public Builder setDescription(String description) {
-            this.description = description;
-            return this;
-        }
-
-        public Builder setTags(List<String> tags) {
-            this.tags = tags;
-            return this;
-        }
-
-        public Builder addTag(String tag) {
-            this.tags.add(tag);
-            return this;
-        }
-
-        public Builder removeTag(String tag) {
-            this.tags.remove(tag);
-            return this;
-        }
-
-        public Builder setProjectDirectory(Path projectDirectory) {
-            this.projectPath = projectDirectory;
-            return this;
-        }
-
-        public Builder setDueBy(LocalDateTime dueBy) {
-            this.dueBy = dueBy;
-            return this;
-        }
-
-        public Builder setStartedAt(LocalDateTime startedAt) {
-            this.startedAt = startedAt;
-            return this;
-        }
-
-        public Builder setCompletedAt(LocalDateTime completedAt) {
-            this.completedAt = completedAt;
-            return this;
-        }
-
-        public Builder setUuid(UUID uuid) {
-            this.uuid = uuid;
-            return this;
-        }
-
-        public Builder setBasePath(Path basePath) {
-            this.basePath = basePath;
-            return this;
-        }
-
-        public Builder setOpenWith(String openWith) {
-            this.openWith = openWith;
-            return this;
         }
 
         public ProjectEntry build() throws IOException {
@@ -289,6 +205,7 @@ public record ProjectEntry(
                     dueBy,
                     startedAt,
                     completedAt,
+                    reminders,
                     uuid,
                     basePath,
                     openWith
@@ -306,6 +223,7 @@ public record ProjectEntry(
             long dueBy,
             long startedAt,
             long completedAt,
+            String reminders,
             String metaPath,
             String projectPath,
             String openWith
