@@ -4,6 +4,8 @@
 (define (file-sep)
   (File:.separator))
 
+(define (now-time) (LocalDateTime:now))
+
 (define (replace-eval-alias evaluator ::ShellEvaluator oldAlias ::String newAlias ::String)
   (evaluator:replaceAlias oldAlias newAlias))
 

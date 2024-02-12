@@ -14,13 +14,17 @@
 (define (load-app-settings)
   (begin
     (set-static Settings 'EXEC_THREADS 1)
-    (set-static Settings 'DATE_INPUT_FORMAT "MM/dd/yy")
+    (set-static Settings 'DATE_INPUT_PATTERNS (List[JString]:of "MM/dd/yy"))
+    (set-static Settings `TIME_INPUT_PATTERNS (List[JString]:of "HH:mm" "H:mm" "h:mm a" "h:mma"))
+    (set-static Settings `DATE_TIME_FULL_PATTERN "EEEE, MMM dd, yyyy '@' HH:mm")
+    (set-static Settings `DATE_TIME_SHORT_PATTERN "EEEE, MMM dd '@' HH:mm")
     ))
 
 
-(define (global-table-settings)
+(define (load-global-table-settings)
   (begin
-    (set-static Settings 'TABLE_MAX_COLUMN_WIDTH 160)
+    (set-static Settings 'TABLE_MAX_COLUMN_WIDTH 40)
+    (set-static Settings 'TABLE_DEFAULT_ALIGNMENT (HorizontalAlign:.LEFT))
     ))
 
 (define (load-calendar-settings)
@@ -34,7 +38,7 @@
 (define (load-shell-settings)
   (begin
     (set-static Settings `SHELL_BIND_ADDRESS "127.0.0.1")
-    (set-static Settings `SHELL_BIND_PORT 22233)
+    (set-static Settings `SHELL_BIND_PORT 2233)
     (set-static Settings `SHELL_USER "user")
     (set-static Settings `SHELL_PASSWORD "password")
     (set-static Settings `SHELL_KEY_PAIR "hostkey.ser")
@@ -42,24 +46,19 @@
 
 (define (load-event-settings)
   (begin
-    (set-static Settings 'EVENT_LOOK_FORWARD_DAYS 8) ; Set to -1 for all
+    (set-static Settings 'EVENT_LOOK_FORWARD_DAYS -1) ; Set to -1 for all
     (set-static Settings 'EVENT_REFRESH_INV_MIN 240)
     (set-static Settings `FADE_TIME_SEC (* 60 60))
     ))
 
-(define (load-shell-modes)
-  (let ((modes
-          (list
-            (ShellMode [DirectoryEval] "DIRECTORY" (Set[JString] :of "dir") (DirectoryEval) "⛘|▹ " "⛘▹▹ ")
-            (ShellMode [SchemeEval] "SCHEME" (Set[JString] :of "scheme") (SchemeEval SchemeInstance) "λ|▹ " "λ▹▹ ")
-            )))
-    (set-static Settings `SHELL_MODES modes)))
+
 
 (define (load-settings)
   (begin
+    (load-app-settings)
+    (load-global-table-settings)
     (load-file-paths)
     (load-calendar-settings)
     (load-shell-settings)
-    (load-shell-modes)
     (load-event-settings)
     ))

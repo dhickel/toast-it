@@ -18,28 +18,46 @@
 (define-alias Arrays java.util.Arrays)
 (define-alias File java.io.File)
 (define-alias JString java.lang.String)
+(define-alias Instance java.time.Instant)
+(define-alias LocalDateTime java.time.LocalDateTime)
+(define-alias Integer java.lang.Integer)
+
+;; Custom Types
+(define-alias Pair io.mindspice.mindlib.data.tuples.Pair)
 
 
 ;; Application Classes
-(define-alias Calendar calendar.Calendar)
-(define-alias CalendarCell calendar.CalendarCell)
-(define-alias TaskEntry entries.task.TaskEntry)
-(define-alias SubTaskEntry entries.task.SubTaskEntry)
-(define-alias TextEntry entries.text.TextEntry)
-(define-alias ProjectEntry entries.project.ProjectEntry)
-(define-alias EventEntry entries.event.EventEntry)
-(define-alias AppShell shell.ApplicationShell)
-(define-alias ShellMode shell.ShellMode)
-(define-alias DirectoryEval shell.DirectoryEval)
-(define-alias ShellEvaluator shell.ShellEvaluator)
-(define-alias SchemeEval shell.SchemeEval)
+(define-alias Calendar io.mindspice.toastit.calendar.Calendar)
+(define-alias CalendarCell io.mindspice.toastit.calendar.CalendarCell)
+(define-alias TaskEntry io.mindspice.toastit.entries.task.TaskEntry)
+(define-alias SubTask io.mindspice.toastit.entries.task.SubTask)
+(define-alias TextEntry io.mindspice.toastit.entries.text.TextEntry)
+(define-alias ProjectEntry io.mindspice.toastit.entries.project.ProjectEntry)
+(define-alias EventEntry io.mindspice.toastit.entries.event.EventEntry)
+(define-alias AppShell io.mindspice.toastit.shell.ApplicationShell)
+(define-alias ShellMode io.mindspice.toastit.shell.ShellMode)
+(define-alias DirectoryEval io.mindspice.toastit.shell.evaluators.DirectoryEval)
+(define-alias ShellEvaluator io.mindspice.toastit.shell.evaluators.ShellEvaluator)
+(define-alias SchemeEval io.mindspice.toastit.shell.evaluators.SchemeEval)
+(define-alias EventEval io.mindspice.toastit.shell.evaluators.EventEval)
 
 ;; Application Enums
-(define-alias EntryType enums.EntryType)
-(define-alias NotificationLevel enums.NotificationLevel)
-(define-alias NotificationType enums.NotificationType)
+(define-alias EntryType io.mindspice.toastit.enums.EntryType)
+(define-alias NotificationLevel io.mindspice.toastit.enums.NotificationLevel)
+(define-alias NotificationType io.mindspice.toastit.enums.NotificationType)
 
 
 ;; Application Util
-(define-alias JSON util.JSON)
-(define-alias Settings util.Settings)
+(define-alias JSON io.mindspice.toastit.util.JSON)
+(define-alias Settings io.mindspice.toastit.util.Settings)
+(define-alias DateTimeUtil io.mindspice.toastit.util.DateTimeUtil)
+(define-alias TableUtil io.mindspice.toastit.util.TableUtil)
+(define-alias Util io.mindspice.toastit.util.Util)
+
+;; Ascii table
+(define-alias Column com.github.freva.asciitable.Column)
+(define-alias ColumnData com.github.freva.asciitable.ColumnData)
+(define-alias HorizontalAlign com.github.freva.asciitable.HorizontalAlign)
+
+;; Application Tables
+(define-alias TableConfig io.mindspice.toastit.util.TableConfig)

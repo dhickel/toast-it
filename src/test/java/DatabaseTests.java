@@ -1,21 +1,22 @@
-import application.App;
-import application.sqlite.DBConnection;
-import entries.event.EventEntry;
-import entries.project.ProjectEntry;
-import entries.task.SubTaskEntry;
-import entries.task.TaskEntry;
-import entries.text.TextEntry;
-import enums.EntryType;
-import enums.NotificationLevel;
+import io.mindspice.toastit.App;
+import io.mindspice.toastit.sqlite.DBConnection;
+import io.mindspice.toastit.entries.event.EventEntry;
+import io.mindspice.toastit.entries.project.ProjectEntry;
+import io.mindspice.toastit.entries.task.SubTask;
+import io.mindspice.toastit.entries.task.TaskEntry;
+import io.mindspice.toastit.entries.text.TextEntry;
+import io.mindspice.toastit.enums.EntryType;
+import io.mindspice.toastit.enums.NotificationLevel;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import util.Util;
+import io.mindspice.toastit.util.Util;
+
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 
@@ -30,12 +31,11 @@ public class DatabaseTests {
 
     final List<String> tags = List.of("tag1", "tag2", "tag3");
 
-
-    private static  App app;
+    private static App app;
     final DBConnection db = app.getDatabase();
 
     @BeforeClass
-    public static void init(){
+    public static void init() {
         try {
             app = App.instance().init();
         } catch (IOException e) {
@@ -43,8 +43,7 @@ public class DatabaseTests {
         }
     }
 
-
-    final SubTaskEntry subTaskNest = new SubTaskEntry(
+    final SubTask subTaskNest = new SubTask(
             "Nested task",
             "Description of a nested task",
             List.of(),
@@ -52,7 +51,7 @@ public class DatabaseTests {
             LocalDateTime.now().plusHours(1)
     );
 
-    final SubTaskEntry subTask1 = new SubTaskEntry(
+    final SubTask subTask1 = new SubTask(
             "Sub Task 1",
             "Basic description of a subtask 1",
             List.of(subTaskNest),
@@ -60,7 +59,7 @@ public class DatabaseTests {
             LocalDateTime.now().plusHours(2)
     );
 
-    final SubTaskEntry subTask2 = new SubTaskEntry(
+    final SubTask subTask2 = new SubTask(
             "Sub Task 2",
             "Basic description of a subtask 2",
             List.of(),
@@ -80,6 +79,7 @@ public class DatabaseTests {
                 LocalDateTime.now().plusHours(1),
                 List.of(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusHours(2)),
                 NotificationLevel.CRITICAL,
+                UUID.randomUUID(),
                 false
         );
 
@@ -87,11 +87,11 @@ public class DatabaseTests {
         db.upsertEvent(event);
 
         EventEntry.Stub dbStub = db.getEventStubByUUID(event.uuid());
-        assert ogStub.equals(dbStub);
+        assertEquals(ogStub, dbStub);
 
         EventEntry fullEntry = db.getEventByUUID(eventUUID);
 
-        assert event.equals(fullEntry);
+        assertEquals(event, fullEntry);
     }
 
     @Test
@@ -119,12 +119,12 @@ public class DatabaseTests {
         // Assert db storage/retrieval
         TaskEntry.Stub ogStub = task.getStub();
         TaskEntry.Stub dbStub = db.getTaskStubByUUID(taskUUID);
-        assert ogStub.equals(dbStub);
+        assertEquals(ogStub, dbStub);
 
         //Write and assert Json load
         task.flushToDisk();
         TaskEntry readTask = db.getTaskByUUID(task.uuid());
-        assert task.equals(readTask);
+        assertEquals(task, readTask);
     }
 
     @Test
@@ -132,7 +132,7 @@ public class DatabaseTests {
 
         Path taskPath = Util.getEntriesPath(EntryType.TASK);
 
-        Path projectPath = Util.getEntriesPath(EntryType.PROJECT );
+        Path projectPath = Util.getEntriesPath(EntryType.PROJECT);
 
         var task = new TaskEntry(
                 "Test Task",
@@ -187,7 +187,7 @@ public class DatabaseTests {
         // asset from db
         ProjectEntry.Stub ogStub = project.getStub();
         ProjectEntry.Stub dbStub = db.getProjectStubByUUID(project.uuid());
-        assert ogStub.equals(dbStub);
+        assertEquals(ogStub, dbStub);
 
         //assert from disk
         project.flushToDisk();
@@ -195,7 +195,7 @@ public class DatabaseTests {
 
         // Remove the task objects since they are not in the json
         ProjectEntry woTasks = project.updateBuilder().setTaskObjs(List.of()).build();
-        assert woTasks.equals(readProject);
+        assertEquals(woTasks, readProject);
     }
 
     @Test
@@ -216,11 +216,11 @@ public class DatabaseTests {
 
         TextEntry.Stub ogStub = journal.getStub();
         TextEntry.Stub dbStub = db.getJournalStubByUUID(journal.uuid());
-        assert ogStub.equals(dbStub);
+        assertEquals(ogStub, dbStub);
 
         journal.flushToDisk();
         TextEntry readJournal = db.getJournalEntryByUUID(journalUUID);
-        assert journal.equals(readJournal);
+        assertEquals(journal, readJournal);
 
     }
 
@@ -242,11 +242,11 @@ public class DatabaseTests {
 
         TextEntry.Stub ogStub = note.getStub();
         TextEntry.Stub dbStub = db.getNoteStubByUUID(note.uuid());
-        assert ogStub.equals(dbStub);
+        assertEquals(ogStub, dbStub);
 
         note.flushToDisk();
         TextEntry readNote = db.getNoteEntryByUUID(noteUUID);
-        assert note.equals(readNote);
+        assertEquals(note, readNote);
 
     }
 }
