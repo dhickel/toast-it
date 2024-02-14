@@ -47,7 +47,6 @@ public class DatabaseTests {
     final SubTask subTaskNest = new SubTask(
             "Nested task",
             "Description of a nested task",
-            List.of(),
             true,
             LocalDateTime.now().plusHours(1)
     );
@@ -55,7 +54,6 @@ public class DatabaseTests {
     final SubTask subTask1 = new SubTask(
             "Sub Task 1",
             "Basic description of a subtask 1",
-            List.of(subTaskNest),
             true,
             LocalDateTime.now().plusHours(2)
     );
@@ -63,7 +61,6 @@ public class DatabaseTests {
     final SubTask subTask2 = new SubTask(
             "Sub Task 2",
             "Basic description of a subtask 2",
-            List.of(),
             true,
             LocalDateTime.now().plusHours(2)
     );
@@ -186,7 +183,8 @@ public class DatabaseTests {
                         new Reminder(LocalDateTime.now().minusDays(3), NotificationLevel.NORMAL)),
                 projectUUID,
                 projectPath,
-                "code"
+                "code",
+                true
 
         );
 

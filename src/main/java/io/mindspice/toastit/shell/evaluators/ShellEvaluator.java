@@ -171,8 +171,6 @@ public abstract class ShellEvaluator<T> {
         return input;
     }
 
-    // TODO add BiConsumer for external user methods
-
     public LocalDateTime promptDateTime(String promptText) {
         LocalDate date = promptDate(promptText);
         LocalTime time = promptTime(promptText);
@@ -208,21 +206,16 @@ public abstract class ShellEvaluator<T> {
         }
     }
 
-    public List<Reminder> promptReminder(String header, LocalDateTime eventTime) {
+    public List<Reminder> promptReminder(LocalDateTime eventTime) {
         List<Reminder> reminders = new ArrayList<>(2);
         List<String> valid = List.of("day", "days", "hr", "hour", "hours", "min", "minute", "minutes");
 
-        printLnToTerminal(header);
+
         while (true) {
-            String input = lineReader.readLine("Enter Reminder Interval('d when done): ").trim();
-            if (isDone(input)) {
-                return reminders;
-            }
+            String input = lineReader.readLine("Enter Reminder Interval: ").trim();
 
             String[] splitInput = input.split(" ");
-            System.out.println(Arrays.toString(splitInput));
             if (splitInput.length < 2 || !Util.isInt(splitInput[0]) || !valid.contains(splitInput[1].toLowerCase())) {
-                System.out.println();
                 printLnToTerminal("Invalid Input, Valid intervals: \"# day\", \"# hr\", \"# min\" \"exit\" ex. \"30 min\" ");
                 continue;
             }
@@ -249,11 +242,13 @@ public abstract class ShellEvaluator<T> {
                 }
             } while (nLevel == null);
 
-            boolean confirm = confirmPrompt(
-                    String.format("Confirm Reminder: %s | %s", DateTimeUtil.printDateTimeFull(rTime), nLevel)
-            );
-            if (confirm) {
+            if (confirmPrompt(
+                    String.format("Confirm Reminder: %s | %s", DateTimeUtil.printDateTimeFull(rTime), nLevel))
+            ) {
                 reminders.add(new Reminder(rTime, nLevel));
+            }
+            if (!confirmPrompt("Add another reminder?")) {
+                return reminders;
             }
         }
     }
@@ -262,18 +257,20 @@ public abstract class ShellEvaluator<T> {
         List<String> tags = new ArrayList<>(4);
 
         printLnToTerminal(header);
-        while (true) { // TODO add completion
-            String input = lineReader.readLine("Enter Tag('d when done): ").trim();
-            if (isDone(input)) {
-                return tags;
-            }
+        String input = lineReader.readLine("Enter Tags(seperated by spaces): ").trim();
+
+        String[] inputTags = input.split("\\s+");
+        for (var tag : inputTags) {
             if (!Settings.TAG_MAP.containsKey(input)) {
-                boolean confirm = confirmPrompt("Unknown tag, add anyway?");
+                boolean confirm = confirmPrompt(String.format("Tag: %s unknown include anyway?", tag));
                 if (confirm) {
-                    tags.add(input);
+                    tags.add(tag);
                 }
+            } else {
+                tags.add(tag);
             }
         }
+        return tags;
     }
 
     public boolean confirmPrompt(String prompt) {

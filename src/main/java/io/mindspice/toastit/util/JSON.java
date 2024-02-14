@@ -56,7 +56,7 @@ public class JSON {
         return objectMapper.readValue(json, clazz);
     }
 
-    public static List<String> arrayStringToSet(String arrayString) {
+    public static List<String> jsonArrayToStringList(String arrayString) {
         try {
             return objectMapper.readValue(arrayString, stringList);
         } catch (JsonProcessingException e) {
@@ -84,7 +84,7 @@ public class JSON {
         }
     }
 
-    public static List<Reminder> arrayStringToReminders(String arrayString) {
+    public static List<Reminder> jsonArrayToReminderList(String arrayString) {
         try {
             return objectMapper.readValue(arrayString, reminderList).stream().map(Reminder.Stub::asFull).toList();
         } catch (JsonProcessingException e) {

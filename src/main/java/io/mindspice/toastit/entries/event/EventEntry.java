@@ -83,7 +83,7 @@ public record EventEntry(
         public Builder(EventEntry e) {
             this.uuid = e.uuid;
             this.name = e.name;
-            this.tags = e.tags;
+            this.tags = new ArrayList<>(e.tags);
             this.startTime = e.startTime;
             this.endTime = e.endTime;
             this.reminders = e.reminders;
@@ -105,7 +105,7 @@ public record EventEntry(
         }
 
         public List<Pair<String, String>> toTableState() {
-            List<Pair<String, String>> rntList = new ArrayList<>();
+            List<Pair<String, String>> rntList = new ArrayList<>(5);
             if (!name.isEmpty()) {
                 rntList.add(Pair.of("Name", name));
             }
@@ -121,7 +121,7 @@ public record EventEntry(
             }
             if (!reminders.isEmpty()) {
                 IntStream.range(0, reminders.size()).forEach(i -> rntList.add(
-                        Pair.of(String.format("Reminder %d", i), reminders.get(i).toString())
+                        Pair.of(String.format("Reminder %d", i + 1), reminders.get(i).toString())
                 ));
             }
             return rntList;

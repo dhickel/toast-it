@@ -46,7 +46,8 @@ public class TableInit {
                 reminders TEXT, --JSON array
                 meta_path TEXT,
                 project_path TEXT,
-                open_with TEST
+                open_with TEST,
+                has_note BOOLEAN,
             );
             """;
 

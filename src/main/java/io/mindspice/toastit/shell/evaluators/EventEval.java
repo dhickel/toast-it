@@ -5,6 +5,7 @@ import com.github.freva.asciitable.ColumnData;
 import io.mindspice.toastit.entries.event.EventEntry;
 import io.mindspice.toastit.entries.event.EventManager;
 import io.mindspice.mindlib.data.tuples.Pair;
+import io.mindspice.toastit.enums.TextColor;
 import io.mindspice.toastit.shell.ShellCommand;
 import io.mindspice.toastit.util.TableConfig;
 import io.mindspice.toastit.util.TableUtil;
@@ -81,45 +82,50 @@ public class EventEval extends ShellEvaluator<EventEval> {
         EventEntry.Builder eventBuilder = EventEntry.builder();
 
         List<ColumnData<Pair<String, String>>> columns = TableUtil.createKeyPairColumns("", "");
-        try {
-            clearScreen();
-            printLnToTerminal(TableUtil.basicBox("New event"));
 
+        Runnable printTable = () -> {
+            try {
+                clearAndPrint(TableUtil.generateTableWithHeader("New Event", eventBuilder.toTableState(), columns));
+            } catch (IOException e) { System.err.println("Error Printing Event Table"); }
+        };
+
+        try {
+            printTable.run();
             //Name
             eventBuilder.name = promptInput("Enter Event Name: ");
-            System.out.println(eventBuilder.toTableState());
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + "\n");
 
             //Start Time
+            printTable.run();
             LocalDateTime start = promptDateTime("Start");
             if (start == null) { return "Aborted..."; }
             eventBuilder.startTime = start;
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + "\n");
 
             //End time
+            printTable.run();
             LocalDateTime end = promptDateTime("End");
             if (end == null) { return "Aborted..."; }
             eventBuilder.endTime = end;
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + "\n");
 
             //Tags
+            printTable.run();
             eventBuilder.tags = promptTags("Event tags");
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + "\n");
 
-            //Reminder
-            eventBuilder.reminders = promptReminder("Event Reminders", eventBuilder.startTime);
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + "\n");
+            //Reminders
+            printTable.run();
+            eventBuilder.reminders = promptReminder(eventBuilder.startTime);
 
+            printTable.run();
             boolean confirmed = false;
             while (!confirmed) {
-                confirmed = confirmPrompt("Finished?(no to edit)");
+                confirmed = confirmPrompt("Finished? (No to edit)");
                 if (!confirmed) {
                     updateEvent(eventBuilder.build());
                 }
             }
 
             eventManger.addEvent(eventBuilder.build());
-            clearAndPrint("!!! Created Event !!!\n");
+            printTable.run();
+            promptInput("Created Event, Press Enter To Continue");
             return modeDisplay.get();
 
         } catch (IOException e) {
@@ -132,35 +138,42 @@ public class EventEval extends ShellEvaluator<EventEval> {
         EventEntry.Builder eventBuilder = event.updateBuilder();
         List<ColumnData<Pair<String, String>>> columns = TableUtil.createKeyPairColumns("", "");
 
+        Runnable printTable = () -> {
+            try {
+                clearAndPrint(TableUtil.generateTableWithHeader("Update Event", eventBuilder.toTableState(), columns) + " \n");
+            } catch (Exception e) { System.err.println("Error Printing Event Table"); }
+        };
+
         try {
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + " \n");
-            if (confirmPrompt("Update Name?")) {
+            printTable.run();
+            if (confirmPrompt("Replace Name?")) {
                 eventBuilder.name = promptInput("Enter New Name: ");
             }
 
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + " \n");
-            if (confirmPrompt("Update Start Time?")) {
+            printTable.run();
+            if (confirmPrompt("Replace Start Time?")) {
                 eventBuilder.startTime = promptDateTime("New Start");
             }
 
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + " \n");
-            if (confirmPrompt("Update End Time?")) {
+            printTable.run();
+            if (confirmPrompt("Replace End Time?")) {
                 eventBuilder.endTime = promptDateTime("New End");
             }
 
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + " \n");
-            if (confirmPrompt("Update Tags?")) {
+            printTable.run();
+            if (confirmPrompt("Replace Tags?")) {
                 eventBuilder.tags = promptTags("New Event Tags");
             }
 
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + " \n");
-            if (confirmPrompt("Update Reminders?")) {
-                eventBuilder.reminders = promptReminder("New Event Reminders", eventBuilder.startTime);
+            printTable.run();
+            if (confirmPrompt("Replace Reminders?")) {
+                eventBuilder.reminders = promptReminder(eventBuilder.startTime);
             }
 
             eventManger.updateEvent(eventBuilder.build());
-            clearAndPrint(TableUtil.generateTable(eventBuilder.toTableState(), columns) + " \n");
-            return TableUtil.basicBox("Updated Event");
+            printTable.run();
+            promptInput("Updated Event, Press Enter To Continue");
+            return modeDisplay.get();
 
         } catch (IOException e) {
             System.err.println(e.getMessage() + " | " + Arrays.toString(e.getStackTrace()));
@@ -192,7 +205,6 @@ public class EventEval extends ShellEvaluator<EventEval> {
 
         String output = "";
         try {
-            start:
             while (true) {
                 clearAndPrint(TableUtil.generateTable(filtered, TableConfig.EVENT_EDIT_TABLE));
                 printLnToTerminal(cmds);
@@ -204,7 +216,7 @@ public class EventEval extends ShellEvaluator<EventEval> {
                 String[] userInput = promptInput("Action: ").trim().split(" ");
                 switch (userInput[0]) {
                     case String s when s.startsWith("exit") -> {
-                        clearAndPrint("");
+                        clearScreen();
                         return modeDisplay.get();
                     }
                     case String s when s.startsWith("new") -> {

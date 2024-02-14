@@ -117,7 +117,7 @@ public record TextEntry(
             this.entryType = n.entryType;
             this.name = n.name;
             this.createdAt = n.createdAt;
-            this.tags = n.tags;
+            this.tags = new ArrayList<>(n.tags);
             this.uuid = n.uuid;
             this.basePath = n.basePath;
         }

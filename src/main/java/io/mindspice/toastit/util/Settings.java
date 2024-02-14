@@ -39,7 +39,6 @@ public class Settings {
 
     // TASKS
     public static int TASK_REFRESH_INV_MIN;
-    public static NotificationLevel TASK_OVER_DUE_NOTIFY_LEVEL;
     public static int TASK_NOTIFY_FADE_TIME_SEC;
 
     // Shell Config

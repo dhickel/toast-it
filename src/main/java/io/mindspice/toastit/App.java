@@ -1,5 +1,6 @@
 package io.mindspice.toastit;
 
+import io.mindspice.toastit.entries.task.TaskManager;
 import io.mindspice.toastit.sqlite.DBConnection;
 import io.mindspice.toastit.entries.event.EventManager;
 import io.mindspice.kawautils.wrappers.KawaInstance;
@@ -24,8 +25,7 @@ public class App {
 
     //Managers
     private EventManager eventManager;
-
-    private final HashSet<String> tags = new HashSet<>();
+    private TaskManager taskManager;
 
 
     static {
@@ -59,13 +59,15 @@ public class App {
         scheme.defineObject("AppInstance", this);
         exec = Executors.newScheduledThreadPool(Settings.EXEC_THREADS);
         eventManager = new EventManager();
-        eventManager.init();
+        taskManager = new TaskManager();
 
         var loadResult = scheme.loadSchemeFile(new File("scheme_files/post-init.scm"));
         if (!loadResult.valid()) {
             System.err.println("Error loading post-init.scm: " + loadResult.exception().orElseThrow());
             System.out.println(Arrays.toString(loadResult.exception().get().getStackTrace()));
         }
+        eventManager.init();
+        taskManager.init();
         shell = new ApplicationShell(scheme);
 
         return INSTANCE;
@@ -81,6 +83,10 @@ public class App {
 
     public EventManager getEventManager() {
         return eventManager;
+    }
+
+    public TaskManager getTaskManager() {
+        return taskManager;
     }
 
 

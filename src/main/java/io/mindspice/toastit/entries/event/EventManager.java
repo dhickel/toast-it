@@ -1,13 +1,14 @@
 package io.mindspice.toastit.entries.event;
 
+import io.mindspice.mindlib.data.tuples.Triple;
 import io.mindspice.toastit.App;
 import io.mindspice.mindlib.data.tuples.Pair;
 import io.mindspice.toastit.notification.Notify;
 import io.mindspice.toastit.notification.Reminder;
+import io.mindspice.toastit.notification.ScheduledNotification;
 import io.mindspice.toastit.util.DateTimeUtil;
 import io.mindspice.toastit.util.Settings;
 import io.mindspice.toastit.util.Tag;
-import io.mindspice.toastit.util.Util;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -15,18 +16,24 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
 public class EventManager {
-    public Map<Pair<UUID, Reminder>, ScheduledFuture<?>> scheduledEvents = new ConcurrentHashMap<>();
+    public List<ScheduledNotification> scheduledNotifications = new CopyOnWriteArrayList<>();
     public final List<EventEntry> pastEvents = new CopyOnWriteArrayList<>();
     public final List<EventEntry> futureEvents = new CopyOnWriteArrayList<>();
     public final ScheduledExecutorService exec = App.instance().getExec();
     public volatile long lastEventReCalc = Instant.now().getEpochSecond();
 
     public void init() {
-        exec.scheduleAtFixedRate(() -> refreshEventNotifications.accept(this), 0, Settings.EVENT_REFRESH_INV_MIN, TimeUnit.MINUTES);
+        exec.scheduleAtFixedRate(
+                () -> refreshEventNotifications.accept(this),
+                0,
+                Settings.EVENT_REFRESH_INV_MIN,
+                TimeUnit.MINUTES
+        );
     }
 
     public List<EventEntry> getPastEvents() {
@@ -56,8 +63,10 @@ public class EventManager {
 
     public void addEvent(EventEntry event) throws IOException {
         App.instance().getDatabase().upsertEvent(event);
-        if (event.startTime().isAfter(LocalDateTime.now().minusDays(Settings.EVENT_LOOK_FORWARD_DAYS))) {
-            createEventReminders(event);
+        int lookForwardDays = Settings.EVENT_LOOK_FORWARD_DAYS;
+        if (lookForwardDays == -1 || event.startTime().isAfter(LocalDateTime.now().minusDays(lookForwardDays))) {
+            List<ScheduledNotification> notifications = createEventReminders.apply(event);
+            scheduledNotifications.addAll(notifications);
             futureEvents.add(event);
         }
     }
@@ -84,12 +93,37 @@ public class EventManager {
     public void removeFromScheduled(UUID uuid) {
         futureEvents.removeIf(e -> e.uuid().equals(uuid));
         pastEvents.removeIf(e -> e.uuid().equals(uuid));
-        scheduledEvents.entrySet().stream().filter(k -> k.getKey().first().equals(uuid))
-                .forEach(entry -> {
-                    entry.getValue().cancel(false);
-                    scheduledEvents.remove(entry.getKey());
-                });
+        List<ScheduledNotification> notifications = scheduledNotifications.stream()
+                .filter(sn -> sn.uuid().equals(uuid)).toList();
+        scheduledNotifications.removeAll(notifications);
     }
+
+    public Function<EventEntry, List<ScheduledNotification>> createEventReminders = (EventEntry event) -> {
+        Tag tag = event.tags().isEmpty()
+                ? Tag.Default()
+                : Settings.TAG_MAP.getOrDefault(event.tags().getFirst(), Tag.Default());
+
+        List<ScheduledNotification> newNotifications = new ArrayList<>(4);
+        event.reminders().forEach(reminder -> {
+            if (scheduledNotifications.stream().noneMatch(
+                    sn -> sn.uuid().equals(event.uuid()) && sn.time().equals(reminder.time()))) {
+
+                ProcessBuilder notification = Notify.newEventNotify(tag, event, reminder.level());
+                Runnable notifyTask = () -> {
+                    try {
+                        notification.start();
+                        scheduledNotifications.removeIf(sn -> sn.uuid().equals(event.uuid()) && sn.time().equals(reminder.time()));
+                    } catch (IOException e) {
+                        System.err.printf("Error emitting notification for: %s, Error: %s%n", event, e);
+                    }
+                };
+
+                var sf = exec.schedule(notifyTask, DateTimeUtil.delayToDateTime(reminder.time()), TimeUnit.SECONDS);
+                newNotifications.add(new ScheduledNotification(event.uuid(), reminder.time(), sf));
+            }
+        });
+        return newNotifications;
+    };
 
     public Consumer<EventManager> refreshEventNotifications = (self) -> {
 
@@ -106,45 +140,23 @@ public class EventManager {
 
             pastEvents.clear();
             pastEvents.addAll(mappedEvents.getOrDefault(Boolean.FALSE, List.of()).stream()
-                    .peek(System.out::println)
                     .sorted(Comparator.comparing(EventEntry::startTime)).toList());
 
             futureEvents.clear();
             futureEvents.addAll(mappedEvents.getOrDefault(Boolean.TRUE, List.of()).stream()
                     .sorted(Comparator.comparing(EventEntry::startTime)).toList());
 
-            futureEvents.forEach(this::createEventReminders);
+            List<ScheduledNotification> notifications = futureEvents.stream()
+                    .flatMap(event -> createEventReminders.apply(event).stream())
+                    .toList();
+
+            scheduledNotifications.addAll(notifications);
 
 
         } catch (IOException e) {
             System.err.println("Failed to refresh events: " + e.getMessage());
         }
     };
-
-    public void createEventReminders(EventEntry event) {
-        Tag tag = event.tags().isEmpty()
-                ? Tag.Default()
-                : Settings.TAG_MAP.getOrDefault(event.tags().getFirst(), Tag.Default());
-
-        event.reminders().forEach(reminder -> {
-            Pair<UUID, Reminder> reminderKey = Pair.of(event.uuid(), reminder);
-            if (scheduledEvents.containsKey(reminderKey) || reminder.time().isAfter(LocalDateTime.now())) {
-                return;
-            }
-            ProcessBuilder notification = Notify.newEventNotification(tag, event, reminder.level());
-            Runnable notifyTask = () -> {
-                try {
-                    notification.start();
-                    scheduledEvents.remove(reminderKey);
-                } catch (IOException e) {
-                    System.err.printf("Error emitting notification for: %s, Error: %s%n", event, e);
-                }
-            };
-
-            var sf = exec.schedule(notifyTask, DateTimeUtil.delayToDateTime(reminder.time()), TimeUnit.SECONDS);
-            scheduledEvents.put(reminderKey, sf);
-        });
-    }
 }
 
 

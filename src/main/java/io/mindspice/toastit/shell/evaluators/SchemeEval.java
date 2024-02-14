@@ -21,6 +21,8 @@ public class SchemeEval extends ShellEvaluator<SchemeEval> {
         return "Entered Scheme Mode.";
     }
 
+
+
     @Override
     public void init(Terminal terminal, LineReader lineReader) {
         super.init(terminal, lineReader);

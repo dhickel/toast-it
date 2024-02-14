@@ -10,14 +10,14 @@ public record Tag(
 ) {
 
     public static Tag of(String tagName) {
-        return new Tag(tagName, tagName, "dialog-info");
+        return new Tag(tagName, tagName, "dialog-information");
     }
 
     public static Tag of(String tagName, String notifyTitle) {
-        return new Tag(tagName, notifyTitle, "dialog-info");
+        return new Tag(tagName, notifyTitle, "dialog-information");
     }
 
     public static Tag Default() {
-        return new Tag("", "", "dialog-info");
+        return new Tag("", "", "dialog-information");
     }
 }

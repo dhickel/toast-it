@@ -36,7 +36,8 @@ public record ProjectEntry(
         List<Reminder> reminders,
         UUID uuid,
         Path basePath,
-        String openWith
+        String openWith,
+        boolean hasNote
 ) implements Task<ProjectEntry>, Entry {
 
     public ProjectEntry {
@@ -91,7 +92,8 @@ public record ProjectEntry(
                 JSON.writeString(reminders.stream().map(Reminder::getStub).toList()),
                 getFile().toString(),
                 projectPath.toString(),
-                openWith
+                openWith,
+                hasNote
         );
     }
 
@@ -102,16 +104,16 @@ public record ProjectEntry(
     @Override
     public ProjectEntry asCompleted(LocalDateTime time) {
         return new ProjectEntry(
-                name, started, true, tasks, taskObjs, description, tags,
-                projectPath, dueBy, startedAt, time, reminders, uuid, basePath, openWith
+                name, started, true, tasks, taskObjs, description, tags, projectPath,
+                dueBy, startedAt, time, reminders, uuid, basePath, openWith, hasNote
         );
     }
 
     @Override
     public ProjectEntry asStarted(LocalDateTime time) {
         return new ProjectEntry(
-                name, true, completed, tasks, taskObjs, description, tags,
-                projectPath, dueBy, time, completedAt, reminders, uuid, basePath, openWith
+                name, true, completed, tasks, taskObjs, description, tags, projectPath,
+                dueBy, time, completedAt, reminders, uuid, basePath, openWith, hasNote
         );
     }
 
@@ -168,6 +170,7 @@ public record ProjectEntry(
         public UUID uuid = UUID.randomUUID();
         public Path basePath;
         public String openWith = "";
+        public boolean hasNote;
 
         public Builder() { }
 
@@ -175,10 +178,10 @@ public record ProjectEntry(
             this.name = p.name;
             this.started = p.started;
             this.completed = p.completed;
-            this.tasks = p.tasks;
-            this.taskObjs = p.taskObjs;
+            this.tasks = new ArrayList<>(p.tasks);
+            this.taskObjs = new ArrayList<>(p.taskObjs);
             this.description = p.description;
-            this.tags = p.tags;
+            this.tags = new ArrayList<>(p.tags);
             this.projectPath = p.projectPath;
             this.dueBy = p.dueBy;
             this.startedAt = p.startedAt;
@@ -187,6 +190,7 @@ public record ProjectEntry(
             this.uuid = p.uuid;
             this.basePath = p.basePath;
             this.openWith = p.openWith;
+            this.hasNote = p.hasNote;
         }
 
         public ProjectEntry build() throws IOException {
@@ -208,7 +212,8 @@ public record ProjectEntry(
                     reminders,
                     uuid,
                     basePath,
-                    openWith
+                    openWith,
+                    hasNote
             );
         }
     }
@@ -226,7 +231,8 @@ public record ProjectEntry(
             String reminders,
             String metaPath,
             String projectPath,
-            String openWith
+            String openWith,
+            boolean hasNote
     ) { }
 
 }

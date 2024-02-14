@@ -112,10 +112,10 @@ public class DBConnection {
                 var event = new EventEntry(
                         UUID.fromString(result.getString("uuid")),
                         result.getString("name"),
-                        JSON.arrayStringToSet(result.getString("tags")),
+                        JSON.jsonArrayToStringList(result.getString("tags")),
                         DateTimeUtil.unixToLocal(result.getLong("start_time")),
                         DateTimeUtil.unixToLocal(result.getLong("end_time")),
-                        JSON.arrayStringToReminders(result.getString("reminders")),
+                        JSON.jsonArrayToReminderList(result.getString("reminders")),
                         UUID.fromString(result.getString("linked_uuid")),
                         result.getBoolean("completed")
                 );
@@ -143,7 +143,8 @@ public class DBConnection {
                         result.getString("reminders"),
                         result.getString("meta_path"),
                         result.getString("project_path"),
-                        result.getString("open_with")
+                        result.getString("open_with"),
+                        result.getBoolean("has_note")
                 );
                 projects.add(project);
             }
@@ -387,9 +388,9 @@ public class DBConnection {
     public void upsertProject(ProjectEntry projectEntry) throws IOException {
         ProjectEntry.Stub entry = projectEntry.getStub();
         String query = """
-                INSERT INTO projects (uuid, name, started, completed, tags, due_by,
-                    started_at, completed_at, reminders, meta_path, project_path, open_with)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO projects (uuid, name, started, completed, tags, due_by, started_at, 
+                    completed_at, reminders, meta_path, project_path, open_with, has_note)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
                    name = excluded.name,
                    tags = excluded.tags,
@@ -402,7 +403,8 @@ public class DBConnection {
                    reminders = excluded.reminders,
                    meta_path = excluded.meta_path,
                    project_path = excluded.project_path,
-                   open_with = excluded.open_with;
+                   open_with = excluded.open_with,
+                   has_note = excluded.has_note;
                 """;
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
@@ -496,12 +498,13 @@ public class DBConnection {
     }
 
     private void deleteByUUID(String table, UUID uuid) throws IOException {
-        String query = String.format("DELETE FROM %s WHERE uuid ?", table);
+        String query = String.format("DELETE FROM %s WHERE uuid = ?", table);
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, uuid.toString());
             ps.executeUpdate();
         } catch (SQLException e) {
+            System.err.println(e);
             throw new IOException(
                     String.format("SQL error returned for deleting entry of: %s Error: %s", uuid, e.getMessage())
             );

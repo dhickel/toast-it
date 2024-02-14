@@ -35,7 +35,6 @@ public class DateTimeUtil {
     public static LocalDate parseDateInput(String date) throws DateTimeException {
         for (var formatter : dateInputFormatters) {
             try {
-                System.out.println(date);
                 return LocalDate.parse(date, formatter);
             } catch (DateTimeParseException e) {
                 //Ignore, hackish way to parse multiple inputs FIXME regex first?
@@ -47,7 +46,6 @@ public class DateTimeUtil {
     public static LocalTime parseTimeInput(String time) throws DateTimeException {
         for (var formatter : timeInputFormatters) {
             try {
-                System.out.println(time);
                 return LocalTime.parse(time, formatter).truncatedTo(ChronoUnit.MINUTES);
             } catch (DateTimeParseException e) {
                 //Ignore, hackish way to parse multiple inputs FIXME regex first?

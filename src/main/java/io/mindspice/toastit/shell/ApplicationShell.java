@@ -119,7 +119,7 @@ public class ApplicationShell {
                             if (inputLine.isEmpty()) { continue; }
                             String returnOutput = currMode.modeInstance().eval(inputLine);
                             if (returnOutput != null) {
-                                output.write(returnOutput.trim().getBytes());
+                                output.write(returnOutput.getBytes());
                             }
                         }
                     }

@@ -35,7 +35,7 @@ public class TableUtil {
     public static List<ColumnData<Pair<String, String>>> createKeyPairColumns(String header1, String header2) {
         return List.of(
                 createColumn(header1, Pair::first),
-                createColumn(header1, Pair::second)
+                createColumn(header2, Pair::second)
         );
     }
 
@@ -48,10 +48,60 @@ public class TableUtil {
         return String.format("+%s+%n%s%n+%s+", "-".repeat(inner.length() - 2), inner, "-".repeat(inner.length() - 2));
     }
 
-    public static <T> String generateTableWithTitle(String title, List<T> itemsList, List<ColumnData<T>> columnList) {
-        String table = AsciiTable.getTable(itemsList, columnList);
-        String centeredTitle = centerString(title, table);
-        return String.join("\n", centeredTitle, table);
+    public static <T> String generateTableWithHeader(String header, List<T> items, List<ColumnData<T>> columnData) {
+        String table = generateTable(items, columnData);
+        int tableLen = table.split("\n")[0].length();
+        int padLen = Math.max(tableLen - 2, header.length());
+
+        String top = String.format("+%s+", "-".repeat(padLen));
+        String mid = String.format("|%s|", centerString(header, padLen));
+
+        if (tableLen < padLen) {
+            String[] split = table.split("\n");
+            if (split.length == 2) {
+                return String.join("\n", top, mid, top);
+            } else {
+                return String.join(
+                        "\n",
+                        top,
+                        mid,
+                        top,
+                        Arrays.stream(split).skip(1).collect(Collectors.joining("\n")) + "\n"
+                );
+            }
+        } else {
+            return String.join("\n", top, mid, table) + "\n";
+        }
+    }
+
+    public static <T> String generateIndexedPairTable(String header, String dataColumnHeader,
+            List<T> items, Function<T, String> dataFunc) {
+
+        List<ColumnData<Pair<String, String>>> columns = TableUtil.createKeyPairColumns("Index", dataColumnHeader);
+        return generateTableWithHeader(
+                header,
+                IntStream.range(0, items.size())
+                        .mapToObj(i -> Pair.of(String.valueOf(i), dataFunc.apply(items.get(i))))
+                        .toList(),
+                columns);
+    }
+
+    public static <T> String generateKeyPairTable(String header, List<T> items,
+            Function<T, String> keyFunc, Function<T, String> valFunc) {
+
+        List<ColumnData<Pair<String, String>>> columns = TableUtil.createKeyPairColumns("", "");
+        return generateTableWithHeader(
+                header,
+                IntStream.range(0, items.size())
+                        .mapToObj(i -> Pair.of(keyFunc.apply(items.get(i)) + i, valFunc.apply(items.get(i))))
+                        .toList(),
+                columns);
+    }
+
+    public static String addTableHeader(String header, String table) {
+        String headerBox = basicBox(header);
+        centerMultiLineString(headerBox, table);
+        return (headerBox + "\n" + table);
     }
 
     public static String centerString(String input, int length) {

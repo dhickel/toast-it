@@ -1,10 +1,12 @@
 package io.mindspice.toastit.entries.task;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.mindspice.mindlib.data.tuples.Pair;
 import io.mindspice.toastit.entries.Entry;
 import io.mindspice.toastit.enums.EntryType;
 import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.toastit.notification.Reminder;
+import io.mindspice.toastit.util.DateTimeUtil;
 import io.mindspice.toastit.util.JSON;
 import io.mindspice.toastit.util.Util;
 
@@ -16,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.IntStream;
 
 
 public record TaskEntry(
@@ -146,17 +149,17 @@ public record TaskEntry(
     }
 
     public static class Builder {
-        public String name = "Unnamed";
+        public String name = "";
         public boolean started = false;
         public boolean completed = false;
-        public List<SubTask> subtasks = new ArrayList<>();
+        public List<SubTask> subtasks = new ArrayList<>(4);
         public String description = "";
-        public List<String> notes = new ArrayList<>();
-        public List<String> tags = new ArrayList<>();
+        public List<String> notes = new ArrayList<>(4);
+        public List<String> tags = new ArrayList<>(4);
         public LocalDateTime dueBy = LocalDateTime.MAX;
         public LocalDateTime startedAt = LocalDateTime.MAX;
         public LocalDateTime completedAt = LocalDateTime.MAX;
-        public List<Reminder> reminders;
+        public List<Reminder> reminders = new ArrayList<>(4);
 
         private UUID uuid = UUID.randomUUID();
         private Path basePath;
@@ -167,10 +170,10 @@ public record TaskEntry(
             this.name = t.name;
             this.started = t.started;
             this.completed = t.completed;
-            this.subtasks = t.subtasks;
+            this.subtasks = new ArrayList<>(t.subtasks);
             this.description = t.description;
-            this.notes = t.notes;
-            this.tags = t.tags;
+            this.notes = new ArrayList<>(t.notes);
+            this.tags = new ArrayList<>(t.tags);
             this.dueBy = t.dueBy;
             this.startedAt = t.startedAt;
             this.completedAt = t.completedAt;
@@ -199,7 +202,84 @@ public record TaskEntry(
                     basePath
             );
         }
+
+        public List<Pair<String, String>> toTableState() {
+            List<Pair<String, String>> rntList = new ArrayList<>();
+            if (!name.isEmpty()) {
+                rntList.add(Pair.of("Name", name));
+            }
+            if (!description.isEmpty()) {
+                rntList.add(Pair.of("Description", description));
+            }
+            if (!tags.isEmpty()) {
+                rntList.add(Pair.of("Tags", tags.toString()));
+            }
+            if (!subtasks.isEmpty()) {
+                IntStream.range(0, subtasks.size()).forEach(i -> rntList.add(
+                        Pair.of(String.format("SubTask %d", i + 1), subtasks.get(i).name())
+                ));
+            }
+            if (!notes.isEmpty()) {
+                IntStream.range(0, notes.size()).forEach(i -> rntList.add(
+                        Pair.of(String.format("Note %d", i + 1), notes.get(i))
+                ));
+            }
+            if (!dueBy.equals(LocalDateTime.MAX)) {
+                rntList.add(Pair.of("Due By", DateTimeUtil.printDateTimeFull(dueBy)));
+            }
+            if (!startedAt.equals(LocalDateTime.MAX)) {
+                rntList.add(Pair.of("Started At", DateTimeUtil.printDateTimeFull(startedAt)));
+            }
+            if (!reminders.isEmpty()) {
+                IntStream.range(0, reminders.size()).forEach(i -> rntList.add(
+                        Pair.of(String.format("Reminder %d", i + 1), reminders.get(i).toString())
+                ));
+            }
+            return rntList;
+        }
+
+        public List<Pair<String, String>> toTableStateFull() {
+            List<Pair<String, String>> rntList = new ArrayList<>();
+            if (!name.isEmpty()) {
+                rntList.add(Pair.of("Name", name));
+            }
+            if (!description.isEmpty()) {
+                rntList.add(Pair.of("Description", description));
+            }
+            rntList.add(Pair.of("Started", String.valueOf(started)));
+            if (started) {
+                rntList.add(Pair.of("Started At", DateTimeUtil.printDateTimeFull(startedAt)));
+
+            }
+            if (!dueBy.equals(LocalDateTime.MAX)) {
+                rntList.add(Pair.of("Due By", DateTimeUtil.printDateTimeFull(dueBy)));
+            }
+            rntList.add(Pair.of("Completed", String.valueOf(completed)));
+            if (completed) {
+                rntList.add(Pair.of("Completed At", DateTimeUtil.printDateTimeFull(completedAt)));
+            }
+            if (!tags.isEmpty()) {
+                rntList.add(Pair.of("Tags", tags.toString()));
+            }
+            if (!subtasks.isEmpty()) {
+                IntStream.range(0, subtasks.size()).forEach(i -> rntList.add(
+                        Pair.of(String.format("SubTask %d", i + 1), subtasks.get(i).name())
+                ));
+            }
+            if (!notes.isEmpty()) {
+                IntStream.range(0, notes.size()).forEach(i -> rntList.add(
+                        Pair.of(String.format("Note %d", i + 1), notes.get(i))
+                ));
+            }
+            if (!reminders.isEmpty()) {
+                IntStream.range(0, reminders.size()).forEach(i -> rntList.add(
+                        Pair.of(String.format("Reminder %d", i + 1), reminders.get(i).toString())
+                ));
+            }
+            return rntList;
+        }
     }
+
 
     public record Stub(
             String uuid,

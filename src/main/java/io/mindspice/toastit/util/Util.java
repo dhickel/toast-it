@@ -8,10 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
+
 import java.util.*;
 
 
@@ -42,25 +39,29 @@ public class Util {
         return Arrays.copyOfRange(split, 1, split.length);
     }
 
-    public static <T extends Enum<T>> T fuzzyMatchEnum(T[] enumerations, String matchString) {
-        Optional<T> bestMatch = Arrays.stream(enumerations)
-                .max(Comparator.comparingInt(e -> fuzzyMatchLength(e.name(), matchString.toUpperCase())));
-        return bestMatch.orElse(null);
-    }
 
     public static <T extends Enum<T>> T enumMatch(T[] enumerations, String matchString) {
         String matchUpper = matchString.toUpperCase();
-        Optional<T> bestMatch = Arrays.stream(enumerations)
+        List<T> matches = Arrays.stream(enumerations)
                 .filter(e -> e.name().startsWith(matchUpper))
-                .findFirst();
+                .toList();
 
-        return bestMatch.orElse(null);
-    }
+        T bestMatch = null;
+        int mostMatch = 0;
 
-    public static String fuzzyMatchString(List<String> strings, String matchString) {
-        Optional<String> bestMatch = strings.stream()
-                .max(Comparator.comparingInt(s -> fuzzyMatchLength(s.toLowerCase(), matchString.toLowerCase())));
-        return bestMatch.orElse(null);
+        for (T match : matches) {
+            String enumName = match.name();
+            int itrLen = Math.min(matchUpper.length(), enumName.length());
+            int count = 0;
+            while (count < itrLen && matchUpper.charAt(count) == enumName.charAt(count)) {
+                ++count;
+            }
+            if (count > mostMatch) {
+                mostMatch = count;
+                bestMatch = match;
+            }
+        }
+        return  bestMatch;
     }
 
     public static boolean isInt(String s) {
@@ -68,18 +69,7 @@ public class Util {
 
     }
 
-    public static int fuzzyMatchLength(String word, String matchTarget) {
-        int longestMatch = 0;
-        for (int i = 0; i < matchTarget.length(); i++) {
-            for (int j = i + 1; j <= matchTarget.length(); j++) {
-                String sub = matchTarget.substring(i, j);
-                if (word.contains(sub) && sub.length() > longestMatch) {
-                    longestMatch = sub.length();
-                }
-            }
-        }
-        return longestMatch;
-    }
+
 }
 
 

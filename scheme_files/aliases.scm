@@ -21,6 +21,7 @@
 (define-alias Instance java.time.Instant)
 (define-alias LocalDateTime java.time.LocalDateTime)
 (define-alias Integer java.lang.Integer)
+(define-alias IntStream java.util.stream.IntStream)
 
 ;; Custom Types
 (define-alias Pair io.mindspice.mindlib.data.tuples.Pair)
@@ -36,10 +37,13 @@
 (define-alias EventEntry io.mindspice.toastit.entries.event.EventEntry)
 (define-alias AppShell io.mindspice.toastit.shell.ApplicationShell)
 (define-alias ShellMode io.mindspice.toastit.shell.ShellMode)
-(define-alias DirectoryEval io.mindspice.toastit.shell.evaluators.DirectoryEval)
+
+;; Application Shell Evaluators
 (define-alias ShellEvaluator io.mindspice.toastit.shell.evaluators.ShellEvaluator)
+(define-alias DirectoryEval io.mindspice.toastit.shell.evaluators.DirectoryEval)
 (define-alias SchemeEval io.mindspice.toastit.shell.evaluators.SchemeEval)
 (define-alias EventEval io.mindspice.toastit.shell.evaluators.EventEval)
+(define-alias TaskEval io.mindspice.toastit.shell.evaluators.TaskEval)
 
 ;; Application Enums
 (define-alias EntryType io.mindspice.toastit.enums.EntryType)
