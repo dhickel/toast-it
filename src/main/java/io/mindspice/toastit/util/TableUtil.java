@@ -50,6 +50,10 @@ public class TableUtil {
 
     public static <T> String generateTableWithHeader(String header, List<T> items, List<ColumnData<T>> columnData) {
         String table = generateTable(items, columnData);
+        return addTableHeader(header, table);
+    }
+
+    public static String addTableHeader(String header, String table) {
         int tableLen = table.split("\n")[0].length();
         int padLen = Math.max(tableLen - 2, header.length());
 
@@ -96,12 +100,6 @@ public class TableUtil {
                         .mapToObj(i -> Pair.of(keyFunc.apply(items.get(i)) + i, valFunc.apply(items.get(i))))
                         .toList(),
                 columns);
-    }
-
-    public static String addTableHeader(String header, String table) {
-        String headerBox = basicBox(header);
-        centerMultiLineString(headerBox, table);
-        return (headerBox + "\n" + table);
     }
 
     public static String centerString(String input, int length) {

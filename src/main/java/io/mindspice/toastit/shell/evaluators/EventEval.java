@@ -7,6 +7,7 @@ import io.mindspice.toastit.entries.event.EventManager;
 import io.mindspice.mindlib.data.tuples.Pair;
 import io.mindspice.toastit.enums.TextColor;
 import io.mindspice.toastit.shell.ShellCommand;
+import io.mindspice.toastit.util.Settings;
 import io.mindspice.toastit.util.TableConfig;
 import io.mindspice.toastit.util.TableUtil;
 
@@ -41,25 +42,26 @@ public class EventEval extends ShellEvaluator<EventEval> {
 
     @Override
     public String modeDisplay() {
-        String pastHeader = TableUtil.basicBox("Past Events");
-        String futureHeader = TableUtil.basicBox("Future Events");
-        String futureTable = futureEventTable();
-        System.out.println(eventManger.getFutureEvents());
-        return pastHeader +
-                "\n\n" + pastEventTable() +
-                "\n\n" + futureHeader +
-                "\n\n" + futureTable +
-                "\n\n" + printActions() + "\n\n";
+        return Settings.EVENT_DASHBOARD_FORMATTER.apply(this) + "\n";
+//        String pastHeader = TableUtil.basicBox("Past Events");
+//        String futureHeader = TableUtil.basicBox("Future Events");
+//        String futureTable = futureEventTable();
+//        System.out.println(eventManger.getFutureEvents());
+//        return pastHeader +
+//                "\n\n" + pastEventTable() +
+//                "\n\n" + futureHeader +
+//                "\n\n" + futureTable +
+//                "\n\n" + printActions() + "\n\n";
     }
 
     public String pastEventTable() {
         List<ColumnData<EventEntry>> viewColumns = TableConfig.EVENT_OVERVIEW_TABLE;
-        return TableUtil.generateTable(eventManger.getPastEvents(), viewColumns);
+        return TableUtil.generateTableWithHeader("Past Events", eventManger.getPastEvents(), viewColumns);
     }
 
     public String futureEventTable() {
         List<ColumnData<EventEntry>> viewColumns = TableConfig.EVENT_OVERVIEW_TABLE;
-        return TableUtil.generateTable(eventManger.getFutureEvents(), viewColumns);
+        return TableUtil.generateTableWithHeader("Future Event", eventManger.getFutureEvents(), viewColumns);
     }
 
     public String clearPast(String input) {

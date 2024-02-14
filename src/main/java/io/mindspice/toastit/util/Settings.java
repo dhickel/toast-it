@@ -3,9 +3,11 @@ package io.mindspice.toastit.util;
 import com.github.freva.asciitable.HorizontalAlign;
 import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.toastit.shell.ShellMode;
+import io.mindspice.toastit.shell.evaluators.EventEval;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 
 public class Settings {
@@ -36,6 +38,7 @@ public class Settings {
     public static int EVENT_LOOK_FORWARD_DAYS;
     public static int EVENT_REFRESH_INV_MIN;
     public static int EVENT_NOTIFY_FADE_TIME_SEC;
+    public static Function<EventEval, String> EVENT_DASHBOARD_FORMATTER;
 
     // TASKS
     public static int TASK_REFRESH_INV_MIN;
