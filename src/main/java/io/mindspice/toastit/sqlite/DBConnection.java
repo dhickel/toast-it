@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,6 +44,7 @@ public class DBConnection {
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute(table);
             } catch (SQLException e) {
+                System.err.println(Arrays.toString(e.getStackTrace()));
                 throw new IllegalStateException("Exception encountered creating database tables: " + e);
             }
         }
@@ -304,7 +306,7 @@ public class DBConnection {
     }
 
     public List<TaskEntry.Stub> getActiveTasks() throws IOException {
-        String query = " SELECT * FROM tasks WHERE started = true";
+        String query = "SELECT * FROM tasks WHERE started = true";
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             return execMapTaskStubs(ps);
@@ -313,9 +315,19 @@ public class DBConnection {
         }
     }
 
-////////////
-// INSERT //
-///////////
+    public List<TaskEntry.Stub> getAllTasks() throws IOException {
+        String query = "SELECT * FROM tasks";
+
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            return execMapTaskStubs(ps);
+        } catch (SQLException e) {
+            throw new IOException("Error querying tasks:" + e.getMessage());
+        }
+    }
+
+    ////////////
+    // INSERT //
+    ///////////
 
     public void upsertEvent(EventEntry eventEntry) throws IOException {
         EventEntry.Stub entry = eventEntry.getStub();
@@ -348,10 +360,10 @@ public class DBConnection {
         }
     }
 
-    public void upsertTask(TaskEntry taskEntry) throws IOException {
+    public void upsertTask(TaskEntry taskEntry, boolean isArchive) throws IOException {
         TaskEntry.Stub entry = taskEntry.getStub();
-        String query = """
-                INSERT INTO tasks (uuid, name, started, completed, tags, due_by, 
+        String query = String.format("""
+                INSERT INTO %s (uuid, name, started, completed, tags, due_by,
                     started_at, completed_at, reminders, meta_path)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
@@ -365,7 +377,7 @@ public class DBConnection {
                    completed_at = excluded.completed_at,
                    reminders = excluded.reminders,
                    meta_path = excluded.meta_path;
-                """;
+                """, isArchive ? "task_archive" : "tasks");
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, entry.uuid());
@@ -381,14 +393,15 @@ public class DBConnection {
 
             ps.executeUpdate();
         } catch (SQLException e) {
+            System.out.println(e);
             throw new IOException(String.format("SQL error returned for: %s Error: %s", entry.uuid(), e.getMessage()));
         }
     }
 
-    public void upsertProject(ProjectEntry projectEntry) throws IOException {
+    public void upsertProject(ProjectEntry projectEntry, boolean isArchive) throws IOException {
         ProjectEntry.Stub entry = projectEntry.getStub();
-        String query = """
-                INSERT INTO projects (uuid, name, started, completed, tags, due_by, started_at, 
+        String query = String.format("""
+                INSERT INTO %s (uuid, name, started, completed, tags, due_by, started_at, 
                     completed_at, reminders, meta_path, project_path, open_with, has_note)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
@@ -405,7 +418,7 @@ public class DBConnection {
                    project_path = excluded.project_path,
                    open_with = excluded.open_with,
                    has_note = excluded.has_note;
-                """;
+                """, isArchive ? "project_archive" : "projects");
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, entry.uuid());
@@ -420,6 +433,7 @@ public class DBConnection {
             ps.setString(10, entry.metaPath());
             ps.setString(11, entry.projectPath());
             ps.setString(12, entry.openWith());
+            ps.setBoolean(13, entry.hasNote());
 
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -460,9 +474,9 @@ public class DBConnection {
         upsertTextEntry(entry, "journals");
     }
 
-////////////
-// DELETE //
-////////////
+    ////////////
+    // DELETE //
+    ////////////
 
     public void deletePastEventEntries(long threshold) throws IOException {
         String query = "DELETE FROM events WHERE end_time < ?";

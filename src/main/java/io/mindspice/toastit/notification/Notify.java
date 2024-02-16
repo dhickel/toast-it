@@ -23,11 +23,11 @@ public class Notify {
         );
     }
 
-    public static ProcessBuilder newTaskNotify(Tag tag, TaskEntry.Stub task, NotificationLevel level) {
+    public static ProcessBuilder newTaskNotify(Tag tag, TaskEntry task, NotificationLevel level) {
         return new ProcessBuilder(
                 "notify-send",
                 tag.notifyTitle().isEmpty() ? task.name() : tag.notifyTitle(),
-                task.name() + " | " + "Due By: " + DateTimeUtil.printDateTimeShort(DateTimeUtil.unixToLocal(task.dueBy())),
+                task.name() + " | " + "Due By: " + DateTimeUtil.printDateTimeShort(task.dueBy()),
                 "-i", tag.icon(),
                 "-u", level.name(),
                 "-t", String.valueOf(1000 * Settings.TASK_NOTIFY_FADE_TIME_SEC)

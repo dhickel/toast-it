@@ -5,9 +5,7 @@ import com.github.freva.asciitable.ColumnData;
 import io.mindspice.toastit.entries.event.EventEntry;
 import io.mindspice.toastit.entries.event.EventManager;
 import io.mindspice.mindlib.data.tuples.Pair;
-import io.mindspice.toastit.enums.TextColor;
 import io.mindspice.toastit.shell.ShellCommand;
-import io.mindspice.toastit.util.Settings;
 import io.mindspice.toastit.util.TableConfig;
 import io.mindspice.toastit.util.TableUtil;
 
@@ -21,7 +19,7 @@ import java.util.stream.IntStream;
 
 
 public class EventEval extends ShellEvaluator<EventEval> {
-    public final EventManager eventManger = App.instance().getEventManager();
+    public final EventManager eventManager = App.instance().getEventManager();
 
     public EventEval() {
         initBaseCommands();
@@ -42,42 +40,34 @@ public class EventEval extends ShellEvaluator<EventEval> {
 
     @Override
     public String modeDisplay() {
-        return Settings.EVENT_DASHBOARD_FORMATTER.apply(this) + "\n";
-//        String pastHeader = TableUtil.basicBox("Past Events");
-//        String futureHeader = TableUtil.basicBox("Future Events");
-//        String futureTable = futureEventTable();
-//        System.out.println(eventManger.getFutureEvents());
-//        return pastHeader +
-//                "\n\n" + pastEventTable() +
-//                "\n\n" + futureHeader +
-//                "\n\n" + futureTable +
-//                "\n\n" + printActions() + "\n\n";
+        return TableConfig.EVENT_DASHBOARD_FORMATTER.apply(this) + "\n";
+//
     }
 
     public String pastEventTable() {
         List<ColumnData<EventEntry>> viewColumns = TableConfig.EVENT_OVERVIEW_TABLE;
-        return TableUtil.generateTableWithHeader("Past Events", eventManger.getPastEvents(), viewColumns);
+        return TableUtil.generateTableWithHeader("Past Events", eventManager.getPastEvents(), viewColumns);
     }
 
     public String futureEventTable() {
         List<ColumnData<EventEntry>> viewColumns = TableConfig.EVENT_OVERVIEW_TABLE;
-        return TableUtil.generateTableWithHeader("Future Event", eventManger.getFutureEvents(), viewColumns);
+        return TableUtil.generateTableWithHeader("Future Event", eventManager.getFutureEvents(), viewColumns);
     }
 
     public String clearPast(String input) {
         if (confirmPrompt("Clear Past Events?")) {
             try {
-                eventManger.clearPastEvents();
+                eventManager.clearPastEvents();
                 clearAndPrint("!!! Cleared Past Events !!!\n");
-                return modeDisplay.get();
+                return modeDisplay();
             } catch (IOException e) {
                 System.err.println(Arrays.toString(e.getStackTrace()));
                 clearScreen();
                 printLnToTerminal(e.getMessage() + "\n");
-                return modeDisplay.get();
+                return modeDisplay();
             }
         }
-        return modeDisplay.get();
+        return modeDisplay();
     }
 
     public String createNewEvent(String input) {
@@ -125,10 +115,10 @@ public class EventEval extends ShellEvaluator<EventEval> {
                 }
             }
 
-            eventManger.addEvent(eventBuilder.build());
+            eventManager.addEvent(eventBuilder.build());
             printTable.run();
             promptInput("Created Event, Press Enter To Continue");
-            return modeDisplay.get();
+            return modeDisplay();
 
         } catch (IOException e) {
             System.err.println(Arrays.toString(e.getStackTrace()));
@@ -172,10 +162,10 @@ public class EventEval extends ShellEvaluator<EventEval> {
                 eventBuilder.reminders = promptReminder(eventBuilder.startTime);
             }
 
-            eventManger.updateEvent(eventBuilder.build());
+            eventManager.updateEvent(eventBuilder.build());
             printTable.run();
             promptInput("Updated Event, Press Enter To Continue");
-            return modeDisplay.get();
+            return modeDisplay();
 
         } catch (IOException e) {
             System.err.println(e.getMessage() + " | " + Arrays.toString(e.getStackTrace()));
@@ -184,7 +174,7 @@ public class EventEval extends ShellEvaluator<EventEval> {
     }
 
     public List<Pair<Integer, EventEntry>> getIndexedEvents() {
-        final List<EventEntry> allEvents = eventManger.getAllEvents();
+        final List<EventEntry> allEvents = eventManager.getAllEvents();
         return IntStream.range(0, allEvents.size())
                 .mapToObj(i -> Pair.of(i, allEvents.get(i))).toList();
     }
@@ -198,17 +188,17 @@ public class EventEval extends ShellEvaluator<EventEval> {
                   update <index>
                   delete <index>
                   view <index>
-                  filter date (brings up date prompt)
+                  filter date (opens date prompt)
                   filter name <name>
                   filter tag <tag>
                   filter all
-                  exit
+                  done
                 """;
 
         String output = "";
         try {
             while (true) {
-                clearAndPrint(TableUtil.generateTable(filtered, TableConfig.EVENT_EDIT_TABLE));
+                clearAndPrint(TableUtil.generateTable(filtered, TableConfig.EVENT_MANAGE_TABLE));
                 printLnToTerminal(cmds);
                 if (!output.isEmpty()) {
                     printLnToTerminal(output + "\n");
@@ -217,9 +207,9 @@ public class EventEval extends ShellEvaluator<EventEval> {
 
                 String[] userInput = promptInput("Action: ").trim().split(" ");
                 switch (userInput[0]) {
-                    case String s when s.startsWith("exit") -> {
+                    case String s when s.startsWith("done") -> {
                         clearScreen();
-                        return modeDisplay.get();
+                        return modeDisplay();
                     }
                     case String s when s.startsWith("new") -> {
                         createNewEvent("");
@@ -236,7 +226,7 @@ public class EventEval extends ShellEvaluator<EventEval> {
                         EventEntry event = events.get(index).second();
                         boolean confirm = confirmPrompt(String.format("Delete event \"%s\"", event.name()));
                         if (confirm) {
-                            eventManger.deleteEvent(event.uuid());
+                            eventManager.deleteEvent(event.uuid());
                             filtered.remove(events.get(index));
                             events.remove(index);
                             output = "Deleted: " + event.name();
@@ -313,7 +303,7 @@ public class EventEval extends ShellEvaluator<EventEval> {
         } catch (Exception e) {
             System.err.println(Arrays.toString(e.getStackTrace()));
         }
-        return modeDisplay.get();
+        return modeDisplay();
     }
 
 

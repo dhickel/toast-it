@@ -9,9 +9,9 @@ import io.mindspice.toastit.util.Settings;
 import io.mindspice.toastit.util.Tag;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +21,7 @@ import java.util.function.Function;
 
 public class TaskManager {
     public final List<ScheduledNotification> scheduledNotifications = new CopyOnWriteArrayList<>();
-    public final List<TaskEntry.Stub> activeTasks = new CopyOnWriteArrayList<>();
+    public final List<TaskEntry> activeTasks = new CopyOnWriteArrayList<>();
     public final ScheduledExecutorService exec = App.instance().getExec();
 
     public void init() {
@@ -33,60 +33,88 @@ public class TaskManager {
         );
     }
 
-    public List<TaskEntry.Stub> getActiveTasks() {
+    public List<TaskEntry> getActiveTasks() {
         return activeTasks;
     }
 
+    public List<TaskEntry> getAllUncompleted() throws IOException {
+        List<TaskEntry.Stub> stubs = App.instance().getDatabase().getAllTasks();
+        List<TaskEntry> tasks = new ArrayList<>(stubs.size());
+        for (var stub : stubs) {
+            try {
+                tasks.add(JSON.loadObjectFromFile(stub.metaPath(), TaskEntry.class));
+            } catch (IOException e) {
+                System.err.println("Failed to load: " + e.getMessage());
+            }
+        }
+        return tasks.stream().sorted(Comparator.comparing(TaskEntry::dueBy)).toList();
+    }
+
     public void addTask(TaskEntry task) throws IOException {
-        App.instance().getDatabase().upsertTask(task);
+        App.instance().getDatabase().upsertTask(task, false);
         if (task.started()) {
-            TaskEntry.Stub taskStub = task.getStub();
-            List<ScheduledNotification> notifications = createTaskReminders.apply(taskStub);
+            List<ScheduledNotification> notifications = createTaskReminders.apply(task);
             scheduledNotifications.addAll(notifications);
-            activeTasks.add(taskStub);
+            activeTasks.add(task);
+        }
+        task.flushToDisk();
+    }
+
+    public void updateTask(TaskEntry task) {
+        try {
+            removeFromScheduled(task.uuid());
+            addTask(task);
+            task.flushToDisk();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error deleting task: " + task.uuid() + "| " + Arrays.toString(e.getStackTrace()));
         }
     }
 
-    public void updateTask(TaskEntry task) throws IOException {
-        removeFromScheduled(task.uuid());
-        addTask(task);
+    public void deleteTask(TaskEntry task) {
+        try {
+            App.instance().getDatabase().deleteTaskByUUID(task.uuid());
+            removeFromScheduled(task.uuid());
+            Files.delete(task.getFile().toPath());
+        } catch (IOException e) {
+            System.err.println("Error deleting task: " + task.uuid() + "| " + Arrays.toString(e.getStackTrace()));
+        }
     }
 
-    public void deleteTask(UUID uuid) throws IOException {
-        App.instance().getDatabase().deleteTaskByUUID(uuid);
-        removeFromScheduled(uuid);
+    public void archiveTask(TaskEntry task) throws IOException {
+        App.instance().getDatabase().deleteTaskByUUID(task.uuid());
+        removeFromScheduled(task.uuid());
+        App.instance().getDatabase().upsertTask(task, true);
     }
 
     public void removeFromScheduled(UUID uuid) {
-        activeTasks.removeIf(t -> t.uuid().equals(uuid.toString()));
+        activeTasks.removeIf(t -> t.uuid().equals(uuid));
         List<ScheduledNotification> notifications = scheduledNotifications.stream()
                 .filter(sn -> sn.uuid().equals(uuid)).toList();
         scheduledNotifications.removeAll(notifications);
     }
 
-    public Function<TaskEntry.Stub, List<ScheduledNotification>> createTaskReminders = (task) -> {
-        var reminders = JSON.jsonArrayToReminderList(task.reminders());
-        var tags = JSON.jsonArrayToStringList(task.tags());
-        var uuid = UUID.fromString(task.uuid());
+    public Function<TaskEntry, List<ScheduledNotification>> createTaskReminders = (task) -> {
 
         List<ScheduledNotification> newNotifications = new ArrayList<>();
-        reminders.forEach(reminder -> {
+        task.reminders().forEach(reminder -> {
             ProcessBuilder notification = Notify.newTaskNotify(
-                    tags.isEmpty() ? Tag.Default() : Settings.getTag(tags.getFirst()),
+                    task.tags().isEmpty() ? Tag.Default() : Settings.getTag(task.tags().getFirst()),
                     task,
                     reminder.level()
             );
 
             Runnable notifyTask = () -> {
-                try {
-                    notification.start();
-                    scheduledNotifications.removeIf(sn -> sn.uuid().equals(uuid) && sn.time().equals(reminder.time()));
-                } catch (IOException e) {
-                    System.err.printf("Error emitting notification for: %s, Error: %s%n", task, e);
-                }
+                //FIXME
+//                try {
+//                    notification.start();
+//                    scheduledNotifications.removeIf(sn -> sn.uuid().equals(task.uuid()) && sn.time().equals(reminder.time()));
+//                } catch (IOException e) {
+//                    System.err.printf("Error emitting notification for: %s, Error: %s%n", task, e);
+//                }
             };
             var sf = exec.schedule(notifyTask, DateTimeUtil.delayToDateTime(reminder.time()), TimeUnit.SECONDS);
-            newNotifications.add(new ScheduledNotification(uuid, reminder.time(), sf));
+            newNotifications.add(new ScheduledNotification(task.uuid(), reminder.time(), sf));
         });
         return newNotifications;
 
@@ -95,7 +123,17 @@ public class TaskManager {
     public Consumer<TaskManager> refreshActiveTasks = (self) -> {
         try {
             activeTasks.clear();
-            activeTasks.addAll(App.instance().getDatabase().getActiveTasks());
+            List<TaskEntry.Stub> taskStubs = App.instance().getDatabase().getActiveTasks();
+            List<TaskEntry> fullTasks = new ArrayList<>(taskStubs.size());
+            for (var stub : taskStubs) {
+                try {
+                    fullTasks.add(JSON.loadObjectFromFile(stub.metaPath(), TaskEntry.class));
+                } catch (IOException e) {
+                    System.err.println("Failed to load: " + e.getMessage());
+                }
+            }
+
+            activeTasks.addAll(fullTasks.stream().sorted(Comparator.comparing(TaskEntry::dueBy)).toList());
 
             List<ScheduledNotification> notifications = activeTasks.stream()
                     .flatMap(task -> createTaskReminders.apply(task).stream())
@@ -103,7 +141,8 @@ public class TaskManager {
 
             scheduledNotifications.addAll(notifications);
         } catch (IOException e) {
-            System.err.println("Failed to refresh active tasks");
+            System.err.printf("Failed to refresh active tasks: %s%n%s%n",
+                    e.getMessage(), Arrays.toString(e.getStackTrace()));
         }
     };
 }

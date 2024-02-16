@@ -55,7 +55,7 @@ public class App {
     }
 
     public App init() throws IOException {
-        scheme.defineObject("ShellInstance", shell);
+
         scheme.defineObject("AppInstance", this);
         exec = Executors.newScheduledThreadPool(Settings.EXEC_THREADS);
         eventManager = new EventManager();
@@ -69,6 +69,11 @@ public class App {
         eventManager.init();
         taskManager.init();
         shell = new ApplicationShell(scheme);
+        scheme.defineObject("ShellInstance", shell);
+//        scheme.safeEval("""
+//                (define (sys-exec input)
+//                  (run-process shell: #t out-to: (ShellInstance:getOutput) input))
+//                """);
 
         return INSTANCE;
     }

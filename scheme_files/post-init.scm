@@ -10,5 +10,14 @@
             )))
     (set-static Settings `SHELL_MODES modes)))
 
+
+;; Some more function definitions that depend on initalizations
+(define (sys-exec input)
+  (run-process shell: #t out-to: (ShellInstance:getOutput) input))
+
+(define (sys-runnable input)
+  (KRunnable (lambda () (sys-exec input))))
+
+
 (load-shell-modes)
 (load-table-configs)

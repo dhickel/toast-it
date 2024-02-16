@@ -16,6 +16,8 @@ public class DateTimeUtil {
     public static DateTimeFormatter dateTimeFullFormatter;
     public static DateTimeFormatter dateTimeShortFormatter;
 
+    public static LocalDateTime MAX = LocalDateTime.of(9999,Month.DECEMBER, 31,0,0,0).truncatedTo(ChronoUnit.MINUTES);
+
 
     static {
         dateInputFormatters = Settings.DATE_INPUT_PATTERNS.stream().map(pattern ->
@@ -61,6 +63,7 @@ public class DateTimeUtil {
     public static String printDateTimeFull(LocalDateTime dateTime) {
         return dateTimeFullFormatter.format(dateTime);
     }
+
 
     public static LocalDateTime unixToLocal(long unixTime) {
         Instant inst = Instant.ofEpochSecond(unixTime);

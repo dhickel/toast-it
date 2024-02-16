@@ -35,6 +35,7 @@ public record EventEntry(
         startTime = startTime.truncatedTo(ChronoUnit.MINUTES);
         endTime = endTime.truncatedTo(ChronoUnit.MINUTES);
         linkedUUID = linkedUUID == null ? UUID.fromString("00000000-0000-0000-0000-000000000000") : linkedUUID;
+
     }
 
     public Stub getStub() throws JsonProcessingException {

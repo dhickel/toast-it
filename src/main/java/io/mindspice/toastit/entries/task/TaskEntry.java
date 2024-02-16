@@ -2,6 +2,7 @@ package io.mindspice.toastit.entries.task;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.mindspice.mindlib.data.tuples.Pair;
+import io.mindspice.mindlib.util.JsonUtils;
 import io.mindspice.toastit.entries.Entry;
 import io.mindspice.toastit.enums.EntryType;
 import io.mindspice.toastit.enums.NotificationLevel;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
@@ -45,6 +47,9 @@ public record TaskEntry(
             basePath = basePath == null ? Util.getEntriesPath(EntryType.TASK) : basePath;
         } catch (IOException e) {
             System.err.println("Error creating path for: " + this);
+        }
+        if (!subtasks.isEmpty()) {
+            completed = subtasks.stream().allMatch(SubTask::completed);
         }
 
     }
@@ -83,8 +88,9 @@ public record TaskEntry(
     }
 
     public TaskEntry asCompleted(LocalDateTime completedTime) {
+        List<SubTask> completedSubs = subtasks.stream().map(st -> st.asCompleted(LocalDateTime.now())).toList();
         return new TaskEntry(
-                name, started, true, subtasks, description, notes,
+                name, started, true, completedSubs, description, notes,
                 tags, dueBy, startedAt, completedTime, reminders, uuid, basePath
         );
     }
@@ -156,9 +162,9 @@ public record TaskEntry(
         public String description = "";
         public List<String> notes = new ArrayList<>(4);
         public List<String> tags = new ArrayList<>(4);
-        public LocalDateTime dueBy = LocalDateTime.MAX;
-        public LocalDateTime startedAt = LocalDateTime.MAX;
-        public LocalDateTime completedAt = LocalDateTime.MAX;
+        public LocalDateTime dueBy = DateTimeUtil.MAX;
+        public LocalDateTime startedAt = DateTimeUtil.MAX;
+        public LocalDateTime completedAt = DateTimeUtil.MAX;
         public List<Reminder> reminders = new ArrayList<>(4);
 
         private UUID uuid = UUID.randomUUID();
@@ -224,10 +230,10 @@ public record TaskEntry(
                         Pair.of(String.format("Note %d", i + 1), notes.get(i))
                 ));
             }
-            if (!dueBy.equals(LocalDateTime.MAX)) {
+            if (!dueBy.equals(DateTimeUtil.MAX)) {
                 rntList.add(Pair.of("Due By", DateTimeUtil.printDateTimeFull(dueBy)));
             }
-            if (!startedAt.equals(LocalDateTime.MAX)) {
+            if (!startedAt.equals(DateTimeUtil.MAX)) {
                 rntList.add(Pair.of("Started At", DateTimeUtil.printDateTimeFull(startedAt)));
             }
             if (!reminders.isEmpty()) {
@@ -251,7 +257,7 @@ public record TaskEntry(
                 rntList.add(Pair.of("Started At", DateTimeUtil.printDateTimeFull(startedAt)));
 
             }
-            if (!dueBy.equals(LocalDateTime.MAX)) {
+            if (!dueBy.equals(DateTimeUtil.MAX)) {
                 rntList.add(Pair.of("Due By", DateTimeUtil.printDateTimeFull(dueBy)));
             }
             rntList.add(Pair.of("Completed", String.valueOf(completed)));
@@ -292,5 +298,10 @@ public record TaskEntry(
             long completedAt,
             String reminders,
             String metaPath
-    ) { }
+    ) {
+        public TaskEntry getFull() throws IOException {
+            return JSON.loadObjectFromFile(metaPath, TaskEntry.class);
+        }
+
+    }
 }

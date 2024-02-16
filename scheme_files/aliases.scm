@@ -6,6 +6,7 @@
 (define-alias KPredicate io.mindspice.kawautils.wrappers.functional.predicates.KawaPredicate)
 (define-alias KBiPredicate io.mindspice.kawautils.wrappers.functional.predicates.KawaBiPredicate)
 (define-alias KSupplier io.mindspice.kawautils.wrappers.functional.suppliers.KawaSupplier)
+(define-alias KRunnable io.mindspice.kawautils.wrappers.KawaRunnable)
 
 
 ;; Java
@@ -22,6 +23,8 @@
 (define-alias LocalDateTime java.time.LocalDateTime)
 (define-alias Integer java.lang.Integer)
 (define-alias IntStream java.util.stream.IntStream)
+(define-alias Duration java.time.Duration)
+(define-alias Runnable java.lang.Runnable)
 
 ;; Custom Types
 (define-alias Pair io.mindspice.mindlib.data.tuples.Pair)
@@ -37,6 +40,7 @@
 (define-alias EventEntry io.mindspice.toastit.entries.event.EventEntry)
 (define-alias AppShell io.mindspice.toastit.shell.ApplicationShell)
 (define-alias ShellMode io.mindspice.toastit.shell.ShellMode)
+(define-alias Reminder io.mindspice.toastit.notification.Reminder)
 
 ;; Application Shell Evaluators
 (define-alias ShellEvaluator io.mindspice.toastit.shell.evaluators.ShellEvaluator)
@@ -51,6 +55,7 @@
 (define-alias NotificationType io.mindspice.toastit.enums.NotificationType)
 
 
+
 ;; Application Util
 (define-alias JSON io.mindspice.toastit.util.JSON)
 (define-alias Settings io.mindspice.toastit.util.Settings)
@@ -62,6 +67,8 @@
 (define-alias Column com.github.freva.asciitable.Column)
 (define-alias ColumnData com.github.freva.asciitable.ColumnData)
 (define-alias HorizontalAlign com.github.freva.asciitable.HorizontalAlign)
+(define-alias OverflowBehaviour com.github.freva.asciitable.OverflowBehaviour)
+(define-alias AsciiTable com.github.freva.asciitable.AsciiTable)
 
 ;; Application Tables
 (define-alias TableConfig io.mindspice.toastit.util.TableConfig)

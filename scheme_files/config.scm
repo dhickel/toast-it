@@ -8,6 +8,7 @@
     (set-static Settings 'NOTE_PATH (string-append root-path (file-sep) "NOTE"))
     (set-static Settings 'JOURNAL_PATH (string-append root-path (file-sep) "JOURNAL"))
     (set-static Settings 'PROJECT_PATH (string-append root-path (file-sep) "PROJECT"))
+    (set-static Settings `TEMP_PATH (string-append root-path (file-sep) ".TEMP"))
     ))
 
 
@@ -20,11 +21,18 @@
     (set-static Settings `DATE_TIME_SHORT_PATTERN "EEEE, MMM dd '@' HH:mm")
     ))
 
+(define (editor-settings)
+  (set-static Settings `NOTE_EDITOR (JString "nano"))
+  (set-static Settings `DESCRIPTION_EDITOR (JString "nano"))
+  (set-static Settings 'JOURNAL_EDITOR (JString "nano"))
+  )
+
 
 (define (load-global-table-settings)
   (begin
     (set-static Settings 'TABLE_MAX_COLUMN_WIDTH 40)
-    (set-static Settings 'TABLE_DEFAULT_ALIGNMENT (HorizontalAlign:.LEFT))
+    (set-static Settings 'TABLE_DEFAULT_ALIGNMENT (HorizontalAlign:.CENTER))
+    (set-static Settings ' TABLE_OVERFLOW_BEHAVIOR (OverflowBehaviour:.ELLIPSIS_LEFT))
     ))
 
 (define (load-calendar-settings)
@@ -49,10 +57,6 @@
     (set-static Settings `EVENT_LOOK_FORWARD_DAYS -1) ; Set to -1 for all
     (set-static Settings `EVENT_REFRESH_INV_MIN 240)
     (set-static Settings `EVENT_NOTIFY_FADE_TIME_SEC (* 60 60))
-    (set-static Settings `EVENT_DASHBOARD_FORMATTER
-      (KFunction[EventEval String]
-        (lambda (eval ::EventEval)
-          (TableUtil:mergeAndPadTable 10 (eval:pastEventTable) (eval:futureEventTable)))))
     ))
 
 (define (load-task-settings)

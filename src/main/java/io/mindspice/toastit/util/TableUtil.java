@@ -10,22 +10,25 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static kawa.lib.prim_imports.string;
+
 
 public class TableUtil {
 
     public static <T> ColumnData<T> createColumn(String header, Function<T, String> printFunc) {
         var col = new Column()
-                .maxWidth(Settings.TABLE_MAX_COLUMN_WIDTH, OverflowBehaviour.ELLIPSIS_RIGHT);
+                .maxWidth(Settings.TABLE_MAX_COLUMN_WIDTH, Settings.TABLE_OVERFLOW_BEHAVIOR);
         if (!header.isEmpty()) {
             col.header(header).headerAlign(HorizontalAlign.CENTER);
         }
         return col.dataAlign(Settings.TABLE_DEFAULT_ALIGNMENT).with(printFunc);
     }
 
-    public static <T> ColumnData<T> createColumn(String header, Function<T, String> printFunc, int maxWidth, int minWidth) {
+    public static <T> ColumnData<T> createColumn(String header, Function<T, String> printFunc, int minWidth, int maxWidth) {
         var col = new Column()
-                .maxWidth(maxWidth, OverflowBehaviour.ELLIPSIS_RIGHT)
-                .minWidth(minWidth);
+                .minWidth(Math.min(minWidth, maxWidth))
+                .maxWidth(maxWidth,  Settings.TABLE_OVERFLOW_BEHAVIOR);
+
         if (!header.isEmpty()) {
             col.header(header).headerAlign(HorizontalAlign.CENTER);
         }
@@ -39,13 +42,22 @@ public class TableUtil {
         );
     }
 
-    public static <T> String generateTable(List<T> itemsList, List<ColumnData<T>> columnList) {
-        return AsciiTable.getTable(itemsList, columnList);
+    public static String basicRow(int offset, String ... items) {
+        StringBuilder top = new StringBuilder(" ".repeat(offset) + "+");
+        StringBuilder mid = new StringBuilder(" ".repeat(offset) +"|");
+        StringBuilder bottom = new StringBuilder(" ".repeat(offset) +"+");
+        for (var s : items) {
+            int len = s.length();
+            top.append("-".repeat(len + 2)).append("+");
+            mid.append(" ").append(s).append(" |");
+            bottom.append("-".repeat(len + 2)).append("+");
+        }
+
+        return String.join("\n", top, mid, bottom);
     }
 
-    public static String basicBox(String content) {
-        String inner = String.format("| %s |", content);
-        return String.format("+%s+%n%s%n+%s+", "-".repeat(inner.length() - 2), inner, "-".repeat(inner.length() - 2));
+    public static <T> String generateTable(List<T> itemsList, List<ColumnData<T>> columnList) {
+        return AsciiTable.getTable(TableConfig.BORDER, itemsList, columnList);
     }
 
     public static <T> String generateTableWithHeader(String header, List<T> items, List<ColumnData<T>> columnData) {
@@ -54,15 +66,16 @@ public class TableUtil {
     }
 
     public static String addTableHeader(String header, String table) {
-        int tableLen = table.split("\n")[0].length();
+        String[] splitTable = table.split("\n");
+        int tableLen = splitTable[0].length();
         int padLen = Math.max(tableLen - 2, header.length());
 
-        String top = String.format("+%s+", "-".repeat(padLen));
-        String mid = String.format("|%s|", centerString(header, padLen));
-
+        Character[] b = TableConfig.BORDER;
+        String top = String.format("%s%s%s", b[0].toString(), b[1].toString().repeat(padLen), b[3].toString());
+        String mid = String.format("%s%s%s", b[4].toString(), centerString(header, padLen), b[4].toString());
+        splitTable[0] = String.format("%s%s%s", b[7], splitTable[0].substring(1, tableLen - 1), b[10]);
         if (tableLen < padLen) {
-            String[] split = table.split("\n");
-            if (split.length == 2) {
+            if (splitTable.length == 2) {
                 return String.join("\n", top, mid, top);
             } else {
                 return String.join(
@@ -70,11 +83,11 @@ public class TableUtil {
                         top,
                         mid,
                         top,
-                        Arrays.stream(split).skip(1).collect(Collectors.joining("\n")) + "\n"
+                        Arrays.stream(splitTable).skip(1).collect(Collectors.joining("\n")) + "\n"
                 );
             }
         } else {
-            return String.join("\n", top, mid, table) + "\n";
+            return String.join("\n", top, mid, String.join("\n", splitTable)) + "\n";
         }
     }
 
@@ -134,7 +147,7 @@ public class TableUtil {
     public static String mergeAndPadTable(int horizontalPad, String... tables) {
         List<List<String>> splitRows = new ArrayList<>();
         for (String table : tables) {
-            splitRows.add(Arrays.asList(table.split("\n")));
+            splitRows.add(new ArrayList<>(Arrays.asList(table.split("\n"))));
         }
         return mergeAndPadRowList(splitRows, " ".repeat(horizontalPad));
     }
@@ -158,5 +171,37 @@ public class TableUtil {
                         .collect(Collectors.joining(horizontalPad)))
                 .collect(Collectors.joining("\n"));
     }
+
+    public static String wrapString(String input, int maxLength) {
+        String[] lines = input.split("\n");
+        List<String> result = new ArrayList<>();
+
+        for (String line : lines) {
+            processLine(line, maxLength, result);
+        }
+        return String.join("\n", result);
+    }
+
+    private static void processLine(String line, int maxLength, List<String> result) {
+        if (line.length() <= maxLength) {
+            result.add(line);
+            return;
+        }
+        int lastSpace = -1;
+        for (int i = 0; i < maxLength; i++) {
+            if (line.charAt(i) == ' ') {
+                lastSpace = i;
+            }
+        }
+
+        if (lastSpace == -1) { // No space found,  split at max
+            result.add(line.substring(0, maxLength));
+            processLine(line.substring(maxLength), maxLength, result);
+        } else {
+            result.add(line.substring(0, lastSpace + 1)); // Include the previous space
+            processLine(line.substring(lastSpace + 1), maxLength, result);
+        }
+    }
+
 
 }

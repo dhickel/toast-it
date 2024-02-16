@@ -40,14 +40,14 @@ public class EventManager {
         if (Instant.now().getEpochSecond() > lastEventReCalc + 60) {
             reCalcEventsLists();
         }
-        return Collections.unmodifiableList(pastEvents);
+        return pastEvents;
     }
 
     public List<EventEntry> getFutureEvents() {
         if (Instant.now().getEpochSecond() > lastEventReCalc + 60) {
             reCalcEventsLists();
         }
-        return Collections.unmodifiableList(futureEvents);
+        return futureEvents;
     }
 
     public void reCalcEventsLists() {
@@ -110,12 +110,13 @@ public class EventManager {
 
                 ProcessBuilder notification = Notify.newEventNotify(tag, event, reminder.level());
                 Runnable notifyTask = () -> {
-                    try {
-                        notification.start();
-                        scheduledNotifications.removeIf(sn -> sn.uuid().equals(event.uuid()) && sn.time().equals(reminder.time()));
-                    } catch (IOException e) {
-                        System.err.printf("Error emitting notification for: %s, Error: %s%n", event, e);
-                    }
+                    //FIXME
+//                    try {
+//                        notification.start();
+//                        scheduledNotifications.removeIf(sn -> sn.uuid().equals(event.uuid()) && sn.time().equals(reminder.time()));
+//                    } catch (IOException e) {
+//                        System.err.printf("Error emitting notification for: %s, Error: %s%n", event, e);
+//                    }
                 };
 
                 var sf = exec.schedule(notifyTask, DateTimeUtil.delayToDateTime(reminder.time()), TimeUnit.SECONDS);

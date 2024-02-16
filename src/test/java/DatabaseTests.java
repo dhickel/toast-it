@@ -113,7 +113,7 @@ public class DatabaseTests {
                 path
         );
 
-        db.upsertTask(task);
+        db.upsertTask(task, false);
 
         // Assert db storage/retrieval
         TaskEntry.Stub ogStub = task.getStub();
@@ -188,7 +188,7 @@ public class DatabaseTests {
 
         );
 
-        db.upsertProject(project);
+        db.upsertProject(project, false);
 
         // asset from db
         ProjectEntry.Stub ogStub = project.getStub();

@@ -1,5 +1,6 @@
 package io.mindspice.toastit.shell.evaluators;
 
+import io.mindspice.mindlib.data.tuples.Pair;
 import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.toastit.notification.Reminder;
 import io.mindspice.toastit.util.DateTimeUtil;
@@ -14,25 +15,20 @@ import java.io.IOException;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 public abstract class ShellEvaluator<T> {
     public Terminal terminal;
     public LineReader lineReader;
     public List<ShellCommand<T>> commands = new ArrayList<>();
-    public Supplier<String> modeDisplay = this::modeDisplay;
 
-    protected abstract String modeDisplay();
-
-    public void setModeDisplay(Supplier<String> displaySupplier) {
-        modeDisplay = displaySupplier;
-    }
+    public abstract String modeDisplay();
 
     public void init(Terminal terminal, LineReader reader) {
         this.terminal = terminal;
@@ -210,7 +206,6 @@ public abstract class ShellEvaluator<T> {
         List<Reminder> reminders = new ArrayList<>(2);
         List<String> valid = List.of("day", "days", "hr", "hour", "hours", "min", "minute", "minutes");
 
-
         while (true) {
             String input = lineReader.readLine("Enter Reminder Interval: ").trim();
 
@@ -303,5 +298,14 @@ public abstract class ShellEvaluator<T> {
         int index = Integer.parseInt(input);
         if (index < 0 || index >= list.size()) { return -1; }
         return index;
+    }
+
+    public <U> List<Pair<Integer, U>> filterList(List<Pair<Integer, U>> list, Predicate<Pair<Integer, U>> predicate) {
+        return list.stream().filter(predicate).toList();
+    }
+
+    public <U> List<Pair<Integer, U>> getIndexedList(final List<U> items) {
+        return IntStream.range(0, items.size())
+                .mapToObj(i -> Pair.of(i, items.get(i))).collect(Collectors.toList());
     }
 }

@@ -2,6 +2,7 @@ package io.mindspice.toastit.shell;
 
 import io.mindspice.toastit.shell.evaluators.DirectoryEval;
 import io.mindspice.kawautils.wrappers.KawaInstance;
+import io.mindspice.toastit.util.Util;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -59,6 +60,9 @@ public class ApplicationShell {
         }
     };
 
+    public OutputStream getOutput() {
+        return output;
+    }
 
     private static class AuthInstance implements PasswordAuthenticator {
         @Override
@@ -77,6 +81,7 @@ public class ApplicationShell {
             terminal.puts(InfoCmp.Capability.clear_screen);
             terminal.flush();
             output = terminal.output();
+            Settings.EDITOR_MAP.put("nano", Util.tempNano(terminal));
 
             LineReader reader = initLineReader();
             initWidgets(reader);
@@ -104,7 +109,7 @@ public class ApplicationShell {
                                         completer.setMode(mode.mode());
                                         terminal.puts(InfoCmp.Capability.clear_screen);
                                         terminal.flush();
-                                        output.write(mode.modeInstance().modeDisplay.get().getBytes());
+                                        output.write(mode.modeInstance().modeDisplay().getBytes());
                                     }
                                 }
                             }
@@ -142,6 +147,7 @@ public class ApplicationShell {
     public void onClear(Terminal terminal) {
         terminal.puts(InfoCmp.Capability.clear_screen);
         terminal.flush();
+
     }
 
     public LineReader initLineReader() {
