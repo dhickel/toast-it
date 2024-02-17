@@ -1,12 +1,11 @@
 package io.mindspice.toastit.entries.task;
 
 import io.mindspice.mindlib.data.tuples.Pair;
+import io.mindspice.toastit.entries.CompletableEntry;
 import io.mindspice.toastit.util.Util;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 
@@ -15,7 +14,7 @@ public record SubTask(
         String description,
         boolean completed,
         LocalDateTime completedAt
-) implements Task<SubTask> {
+) implements CompletableEntry<SubTask> {
 
     public SubTask {
         completedAt = completedAt.truncatedTo(ChronoUnit.MINUTES);

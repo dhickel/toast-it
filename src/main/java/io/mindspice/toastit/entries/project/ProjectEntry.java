@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.mindspice.toastit.entries.Entry;
 import io.mindspice.toastit.entries.task.TaskEntry;
-import io.mindspice.toastit.entries.task.Task;
+import io.mindspice.toastit.entries.CompletableEntry;
 import io.mindspice.toastit.enums.EntryType;
 import io.mindspice.toastit.notification.Reminder;
 import io.mindspice.toastit.util.JSON;
@@ -38,7 +38,7 @@ public record ProjectEntry(
         Path basePath,
         String openWith,
         boolean hasNote
-) implements Task<ProjectEntry>, Entry {
+) implements CompletableEntry<ProjectEntry>, Entry {
 
     public ProjectEntry {
         dueBy = dueBy.truncatedTo(ChronoUnit.MINUTES);
@@ -121,14 +121,14 @@ public record ProjectEntry(
     public boolean completed() {
         return taskObjs.isEmpty()
                 ? completed
-                : taskObjs.stream().allMatch(Task::completed);
+                : taskObjs.stream().allMatch(CompletableEntry::completed);
     }
 
     @Override
     public double completionDbl() {
         return taskObjs.isEmpty()
                 ? (completed ? 1 : 0)
-                : taskObjs.stream().mapToDouble(Task::completionDbl).average().orElse(1);
+                : taskObjs.stream().mapToDouble(CompletableEntry::completionDbl).average().orElse(1);
     }
 
     @Override

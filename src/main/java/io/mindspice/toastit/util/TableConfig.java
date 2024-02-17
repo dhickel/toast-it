@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 public class TableConfig {
     public static Character[] BORDER;
+
     // Event
     public static List<ColumnData<Pair<Integer, EventEntry>>> EVENT_MANAGE_TABLE;
     public static List<ColumnData<EventEntry>> EVENT_OVERVIEW_TABLE;

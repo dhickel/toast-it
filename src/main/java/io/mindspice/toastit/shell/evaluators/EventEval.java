@@ -5,6 +5,7 @@ import com.github.freva.asciitable.ColumnData;
 import io.mindspice.toastit.entries.event.EventEntry;
 import io.mindspice.toastit.entries.event.EventManager;
 import io.mindspice.mindlib.data.tuples.Pair;
+import io.mindspice.toastit.shell.InputPrompt;
 import io.mindspice.toastit.shell.ShellCommand;
 import io.mindspice.toastit.util.TableConfig;
 import io.mindspice.toastit.util.TableUtil;
@@ -75,11 +76,8 @@ public class EventEval extends ShellEvaluator<EventEval> {
 
         List<ColumnData<Pair<String, String>>> columns = TableUtil.createKeyPairColumns("", "");
 
-        Runnable printTable = () -> {
-            try {
+        Runnable printTable = () ->
                 clearAndPrint(TableUtil.generateTableWithHeader("New Event", eventBuilder.toTableState(), columns));
-            } catch (IOException e) { System.err.println("Error Printing Event Table"); }
-        };
 
         try {
             printTable.run();
@@ -117,7 +115,7 @@ public class EventEval extends ShellEvaluator<EventEval> {
 
             eventManager.addEvent(eventBuilder.build());
             printTable.run();
-            promptInput("Created Event, Press Enter To Continue");
+            promptInput("Created Event, Press Enter To Continue...");
             return modeDisplay();
 
         } catch (IOException e) {
@@ -126,7 +124,7 @@ public class EventEval extends ShellEvaluator<EventEval> {
         }
     }
 
-    public String updateEvent(EventEntry event) {
+    public EventEntry updateEvent(EventEntry event) {
         EventEntry.Builder eventBuilder = event.updateBuilder();
         List<ColumnData<Pair<String, String>>> columns = TableUtil.createKeyPairColumns("", "");
 
@@ -136,41 +134,35 @@ public class EventEval extends ShellEvaluator<EventEval> {
             } catch (Exception e) { System.err.println("Error Printing Event Table"); }
         };
 
-        try {
-            printTable.run();
-            if (confirmPrompt("Replace Name?")) {
-                eventBuilder.name = promptInput("Enter New Name: ");
-            }
-
-            printTable.run();
-            if (confirmPrompt("Replace Start Time?")) {
-                eventBuilder.startTime = promptDateTime("New Start");
-            }
-
-            printTable.run();
-            if (confirmPrompt("Replace End Time?")) {
-                eventBuilder.endTime = promptDateTime("New End");
-            }
-
-            printTable.run();
-            if (confirmPrompt("Replace Tags?")) {
-                eventBuilder.tags = promptTags("New Event Tags");
-            }
-
-            printTable.run();
-            if (confirmPrompt("Replace Reminders?")) {
-                eventBuilder.reminders = promptReminder(eventBuilder.startTime);
-            }
-
-            eventManager.updateEvent(eventBuilder.build());
-            printTable.run();
-            promptInput("Updated Event, Press Enter To Continue");
-            return modeDisplay();
-
-        } catch (IOException e) {
-            System.err.println(e.getMessage() + " | " + Arrays.toString(e.getStackTrace()));
-            return e.getMessage();
+        printTable.run();
+        if (confirmPrompt("Replace Name?")) {
+            eventBuilder.name = promptInput("Enter New Name: ");
         }
+
+        printTable.run();
+        if (confirmPrompt("Replace Start Time?")) {
+            eventBuilder.startTime = promptDateTime("New Start");
+        }
+
+        printTable.run();
+        if (confirmPrompt("Replace End Time?")) {
+            eventBuilder.endTime = promptDateTime("New End");
+        }
+
+        printTable.run();
+        if (confirmPrompt("Replace Tags?")) {
+            eventBuilder.tags = promptTags("New Event Tags");
+        }
+
+        printTable.run();
+        if (confirmPrompt("Replace Reminders?")) {
+            eventBuilder.reminders = promptReminder(eventBuilder.startTime);
+        }
+
+        printTable.run();
+        promptInput("Updated Event, Press Enter To Continue...");
+        return eventBuilder.build();
+
     }
 
     public List<Pair<Integer, EventEntry>> getIndexedEvents() {
@@ -180,26 +172,20 @@ public class EventEval extends ShellEvaluator<EventEval> {
     }
 
     public String manageEvents(String input) {
-        List<Pair<Integer, EventEntry>> events = getIndexedEvents();
-        List<Pair<Integer, EventEntry>> filtered = events;
-        String cmds = """
-                \n\nActions:
-                  new
-                  update <index>
-                  delete <index>
-                  view <index>
-                  filter date (opens date prompt)
-                  filter name <name>
-                  filter tag <tag>
-                  filter all
-                  done
-                """;
+        InputPrompt<EventEntry> prompt = new InputPrompt<>(getIndexedEvents());
+
+        String cmds = String.join("\n", "\nAvailable Actions:",
+                TableUtil.basicRow(2, "new", "view <index>", "update <index>", "delete <index>", "done"),
+                TableUtil.basicRow(2, "filter all", "filter start", "filter <name>", "filter <tag>"),
+                TableUtil.basicRow(2, "archive <index>", "archive past"));
 
         String output = "";
-        try {
-            while (true) {
-                clearAndPrint(TableUtil.generateTable(filtered, TableConfig.EVENT_MANAGE_TABLE));
+
+        while (true) {
+            try {
+                clearAndPrint(TableUtil.generateTable(prompt.getFiltered(), TableConfig.EVENT_MANAGE_TABLE));
                 printLnToTerminal(cmds);
+
                 if (!output.isEmpty()) {
                     printLnToTerminal(output + "\n");
                     output = "";
@@ -213,98 +199,54 @@ public class EventEval extends ShellEvaluator<EventEval> {
                     }
                     case String s when s.startsWith("new") -> {
                         createNewEvent("");
-                        events = getIndexedEvents();
-                        filtered = events;
+                        prompt = new InputPrompt<>(getIndexedEvents());
                     }
 
-                    case String s when s.startsWith("delete") -> {
-                        int index;
-                        if (userInput.length < 2 || (index = validateIndexInput(userInput[1], events)) == -1) {
-                            output = "Invalid input or index";
-                            continue;
-                        }
-                        EventEntry event = events.get(index).second();
-                        boolean confirm = confirmPrompt(String.format("Delete event \"%s\"", event.name()));
-                        if (confirm) {
-                            eventManager.deleteEvent(event.uuid());
-                            filtered.remove(events.get(index));
-                            events.remove(index);
-                            output = "Deleted: " + event.name();
-                        }
-                    }
+                    case String s when s.startsWith("delete") -> output = prompt.create()
+                            .validateInputLength(userInput, 2)
+                            .validateAndGetIndex(userInput[1])
+                            .confirm(this::confirmPrompt, entry -> String.format("Delete Event \"%s\"?", entry.name()))
+                            .itemConsumer(eventManager::deleteEvent)
+                            .listRemove()
+                            .display(entry -> "Deleted:" + entry.name());
 
-                    case String s when s.startsWith("update") -> {
-                        int index;
-                        if (userInput.length < 2 || (index = validateIndexInput(userInput[1], events)) == -1) {
-                            output = "Invalid input or index";
-                            continue;
-                        }
-                        updateEvent(events.get(index).second());
-                        output = "Updated: " + events.get(index).second().name();
-                    }
+                    case String s when s.startsWith("update") -> output = prompt.create()
+                            .validateInputLength(userInput, 2)
+                            .validateAndGetIndex(userInput[1])
+                            .itemUpdate(this::updateEvent)
+                            .itemConsumer(eventManager::updateEvent)
+                            .display(entry -> "Updated: " + entry.name());
 
-                    case String s when s.startsWith("view") -> {
-                        int index;
-                        if (userInput.length < 2 || (index = validateIndexInput(userInput[1], events)) == -1) {
-                            output = "Invalid input or index";
-                            continue;
-                        }
-                        List<ColumnData<Pair<String, String>>> columns = TableUtil.createKeyPairColumns("", "");
-                        clearAndPrint(TableUtil.generateTable(events.get(index).second().updateBuilder().toTableState(), columns));
-                        promptInput("Press enter to continue");
-                    }
+                    case String s when s.startsWith("view") -> output = prompt.create()
+                            .validateInputLength(userInput, 2)
+                            .validateAndGetIndex(userInput[1])
+                            .itemConsumer(item -> {
+                                List<ColumnData<Pair<String, String>>> columns = TableUtil.createKeyPairColumns("", "");
+                                clearAndPrint(TableUtil.generateTable(item.updateBuilder().toTableState(), columns));
+                            })
+                            .display(__ -> promptInput("Press Enter To Continue..."));
 
-                    case String s when s.startsWith("filter") -> {
-                        if (userInput.length < 2) {
-                            output = "Invalid input or index";
-                            continue;
-                        }
-                        switch (userInput[1]) {
-                            case String s1 when s1.startsWith("date") -> {
-                                LocalDate start = promptDate("filter start");
-                                LocalDate end = promptDate("filter end");
-                                filtered = events.stream()
-                                        .filter(e -> e.second().startTime().isAfter(start.atStartOfDay().minusDays(1))
-                                                && e.second().endTime().isBefore(end.atStartOfDay().plusDays(1))
-                                        ).toList();
-                                output = "Filtered";
-                            }
-                            case String s1 when s1.startsWith("tag") -> {
-                                if (userInput.length < 3) {
-                                    output = "Invalid input or index";
-                                    continue;
-                                }
-                                filtered = events.stream()
-                                        .filter(e -> e.second().tags().contains(userInput[2]))
-                                        .toList();
-                                output = "Filtered";
-                            }
-                            case String s1 when s1.startsWith("name") -> {
-                                if (userInput.length < 3) {
-                                    printLnToTerminal("Invalid input");
-                                }
-                                filtered = events.stream()
-                                        .filter(e -> e.second().name().toLowerCase().contains(userInput[2].toLowerCase()))
-                                        .toList();
-                                output = "Filtered";
-                            }
-                            case String s1 when s1.startsWith("all") -> {
-                                filtered = events;
-                                output = "Showing All";
-                            }
+                    case String s when s.startsWith("filter") -> output = filterPrompt(userInput, prompt);
 
-                            default -> output = "Invalid input";
-                        }
-                    }
+                    case String s when s.startsWith("archive past") -> output = String.format(
+                            "Archived %d Tasks",
+                            archiveEntries(t -> t.second().endTime().isBefore(LocalDateTime.now()), prompt, eventManager::archiveEvent)
+                    );
 
-                    default -> output = "Invalid input";
+                    case String s when s.startsWith("archive") -> output = prompt.create()
+                            .validateInputLength(userInput, 2)
+                            .validateAndGetIndex(userInput[1])
+                            .confirm(this::confirmPrompt, i -> String.format("Archive Event: %s (Irreversible)", i.name()))
+                            .itemConsumer(eventManager::archiveEvent)
+                            .display(i -> "Archived: " + i.name());
+
+                    default -> output = "Invalid Input";
                 }
+            } catch (Exception e) {
+                System.err.println(Arrays.toString(e.getStackTrace()));
             }
-        } catch (Exception e) {
-            System.err.println(Arrays.toString(e.getStackTrace()));
         }
-        return modeDisplay();
     }
-
-
 }
+
+

@@ -1,21 +1,14 @@
 package io.mindspice.toastit.util;
 
-import com.github.freva.asciitable.ColumnData;
 import com.github.freva.asciitable.HorizontalAlign;
 import com.github.freva.asciitable.OverflowBehaviour;
-import io.mindspice.mindlib.data.tuples.Pair;
-import io.mindspice.toastit.entries.event.EventEntry;
-import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.toastit.shell.ShellMode;
-import io.mindspice.toastit.shell.evaluators.EventEval;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 
 public class Settings {
@@ -29,21 +22,26 @@ public class Settings {
     public static String PROJECT_PATH;
     public static String TEMP_PATH;
 
-
     // Edit Settings
-    public static String NOTE_EDITOR;
-    public static String DESCRIPTION_EDITOR;
-    public static String JOURNAL_EDITOR;
+
 
     public static final Map<String, Consumer<Path>> EDITOR_MAP = new HashMap<>();
+
+    public static void addEditor(String editorName, Consumer<Path> editorConsumer) {
+        EDITOR_MAP.put(editorName, editorConsumer);
+    }
 
     // TAGS
     public static final Map<String, Tag> TAG_MAP = new HashMap<>();
     public static Tag DEFAULT_TAG = Tag.Default();
 
-    public static Tag getTag(String tag){
+    public static Tag getTag(String tag) {
         return TAG_MAP.getOrDefault(tag, DEFAULT_TAG);
     }
+
+    // Global
+    public static int MAX_PREVIEW_LENGTH;
+
 
     // Application
     public static int EXEC_THREADS;
@@ -81,8 +79,6 @@ public class Settings {
     public static int TABLE_HORIZONTAL_LIST_SPACING = 10;
     public static HorizontalAlign TABLE_DEFAULT_ALIGNMENT;
     public static OverflowBehaviour TABLE_OVERFLOW_BEHAVIOR;
-
-
 
 
 }

@@ -3,6 +3,7 @@ package io.mindspice.toastit.entries.event;
 import io.mindspice.mindlib.data.tuples.Triple;
 import io.mindspice.toastit.App;
 import io.mindspice.mindlib.data.tuples.Pair;
+import io.mindspice.toastit.entries.task.TaskEntry;
 import io.mindspice.toastit.notification.Notify;
 import io.mindspice.toastit.notification.Reminder;
 import io.mindspice.toastit.notification.ScheduledNotification;
@@ -62,7 +63,7 @@ public class EventManager {
     }
 
     public void addEvent(EventEntry event) throws IOException {
-        App.instance().getDatabase().upsertEvent(event);
+        App.instance().getDatabase().upsertEvent(event, false);
         int lookForwardDays = Settings.EVENT_LOOK_FORWARD_DAYS;
         if (lookForwardDays == -1 || event.startTime().isAfter(LocalDateTime.now().minusDays(lookForwardDays))) {
             List<ScheduledNotification> notifications = createEventReminders.apply(event);
@@ -71,14 +72,32 @@ public class EventManager {
         }
     }
 
-    public void updateEvent(EventEntry event) throws IOException {
-        removeFromScheduled(event.uuid());
-        addEvent(event);
+    public void updateEvent(EventEntry event) {
+        try {
+            removeFromScheduled(event.uuid());
+            addEvent(event);
+        } catch (IOException e) {
+            System.err.println("Error deleting task: " + event.uuid() + "| " + Arrays.toString(e.getStackTrace()));
+        }
     }
 
-    public void deleteEvent(UUID uuid) throws IOException {
-        App.instance().getDatabase().deleteEventByUUID(uuid);
-        removeFromScheduled(uuid);
+    public void deleteEvent(EventEntry event) {
+        try {
+            App.instance().getDatabase().deleteEventByUUID(event.uuid());
+            removeFromScheduled(event.uuid());
+        } catch (IOException e) {
+            System.err.println("Error deleting Event: " + event.uuid() + "| " + Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    public void archiveEvent(EventEntry task) {
+        try {
+            App.instance().getDatabase().deleteEventByUUID(task.uuid());
+            removeFromScheduled(task.uuid());
+            App.instance().getDatabase().upsertEvent(task, true);
+        } catch (IOException e) {
+            System.err.println("Error archiving task: " + task.uuid() + "| " + Arrays.toString(e.getStackTrace()));
+        }
     }
 
     public List<EventEntry> getAllEvents() {

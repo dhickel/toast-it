@@ -66,7 +66,6 @@ public class TaskManager {
             addTask(task);
             task.flushToDisk();
         } catch (IOException e) {
-            e.printStackTrace();
             System.err.println("Error deleting task: " + task.uuid() + "| " + Arrays.toString(e.getStackTrace()));
         }
     }
@@ -81,10 +80,14 @@ public class TaskManager {
         }
     }
 
-    public void archiveTask(TaskEntry task) throws IOException {
-        App.instance().getDatabase().deleteTaskByUUID(task.uuid());
-        removeFromScheduled(task.uuid());
-        App.instance().getDatabase().upsertTask(task, true);
+    public void archiveTask(TaskEntry task) {
+        try {
+            App.instance().getDatabase().deleteTaskByUUID(task.uuid());
+            removeFromScheduled(task.uuid());
+            App.instance().getDatabase().upsertTask(task, true);
+        } catch (IOException e) {
+            System.err.println("Error archiving task: " + task.uuid() + "| " + Arrays.toString(e.getStackTrace()));
+        }
     }
 
     public void removeFromScheduled(UUID uuid) {

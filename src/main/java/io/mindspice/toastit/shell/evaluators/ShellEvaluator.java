@@ -1,9 +1,12 @@
 package io.mindspice.toastit.shell.evaluators;
 
 import io.mindspice.mindlib.data.tuples.Pair;
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.toastit.notification.Reminder;
+import io.mindspice.toastit.shell.InputPrompt;
 import io.mindspice.toastit.util.DateTimeUtil;
+import io.mindspice.toastit.util.TableUtil;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
 import org.jline.utils.InfoCmp;
@@ -15,10 +18,9 @@ import java.io.IOException;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -85,7 +87,7 @@ public abstract class ShellEvaluator<T> {
                 .collect(Collectors.joining("\n")) + "\n";
     }
 
-    public void clearAndPrint(String s) throws IOException {
+    public void clearAndPrint(String s) {
         try {
             terminal.puts(InfoCmp.Capability.clear_screen);
             terminal.flush();
@@ -218,12 +220,13 @@ public abstract class ShellEvaluator<T> {
             int interval = Integer.parseInt(splitInput[0]);
             LocalDateTime rTime;
             switch (splitInput[1].toLowerCase()) {
+                case String s when s.startsWith("month") -> rTime = eventTime.minusMonths(interval).truncatedTo(ChronoUnit.MINUTES);
+                case String s when s.startsWith("week") -> rTime = eventTime.minusWeeks(interval).truncatedTo(ChronoUnit.MINUTES);
                 case String s when s.startsWith("day") -> rTime = eventTime.minusDays(interval).truncatedTo(ChronoUnit.MINUTES);
-                case String s when s.startsWith("hr") || s.startsWith("hour") ->
-                        rTime = eventTime.minusHours(interval).truncatedTo(ChronoUnit.MINUTES);
+                case String s when s.startsWith("hour") -> rTime = eventTime.minusHours(interval).truncatedTo(ChronoUnit.MINUTES);
                 case String s when s.startsWith("min") -> rTime = eventTime.minusMinutes(interval).truncatedTo(ChronoUnit.MINUTES);
                 default -> {
-                    printLnToTerminal("Invalid Input, Valid intervals: \"# day\", \"# hr\", \"# min\" \"exit\" ex. \"30 min\" ");
+                    printLnToTerminal("Invalid Input, Valid intervals: \"# day\", \"# hour\", \"# min\", \"# week\",, \"# month\", \"exit\" ex. \"30 min\" ");
                     continue;
                 }
             }
@@ -246,6 +249,27 @@ public abstract class ShellEvaluator<T> {
                 return reminders;
             }
         }
+    }
+
+    public List<String> promptNotes() throws IOException {
+        List<String> notes = new ArrayList<>(4);
+        do {
+            String table = TableUtil.generateKeyPairTable(
+                    "Notes", notes, (__) -> "Note ",
+                    (note) -> TableUtil.wrapString(note, Settings.TABLE_MAX_COLUMN_WIDTH - 4)
+            );
+
+            clearAndPrint(table + "\n");
+            notes.add(stringEntryCreator.get());
+
+            table = TableUtil.generateKeyPairTable(
+                    "Notes", notes, (__) -> "Note ",
+                    (note) -> TableUtil.wrapString(note, Settings.TABLE_MAX_COLUMN_WIDTH - 4)
+            );
+
+            clearAndPrint(table + "\n");
+        } while (confirmPrompt("Add another note?"));
+        return notes;
     }
 
     public List<String> promptTags(String header) {
@@ -300,12 +324,93 @@ public abstract class ShellEvaluator<T> {
         return index;
     }
 
-    public <U> List<Pair<Integer, U>> filterList(List<Pair<Integer, U>> list, Predicate<Pair<Integer, U>> predicate) {
-        return list.stream().filter(predicate).toList();
+    public <U extends DatedEntry> String filterPrompt(String[] userInput, InputPrompt<U> prompt) {
+        if (userInput.length < 2) {
+            return "Invalid input or index";
+        }
+
+        switch (userInput[1]) {
+            case String s1 when s1.startsWith("due") -> {
+                LocalDateTime start = promptDate("filter start").atStartOfDay();
+                LocalDateTime end = promptDate("filter end").plusDays(1).atStartOfDay();
+                return prompt.create()
+                        .filter(t -> t.dueBy().isAfter(start) && t.dueBy().isBefore(end))
+                        .display(__ -> String.format("Filtered Due By: %s - %s", start, end));
+            }
+
+            case String s1 when s1.startsWith("start") -> {
+                LocalDateTime start = promptDate("filter start").atStartOfDay();
+                LocalDateTime end = promptDate("filter end").plusDays(1).atStartOfDay();
+                return prompt.create()
+                        .filter(t -> t.startedAt().isAfter(start) && t.startedAt().isBefore(end))
+                        .display(__ -> String.format("Filtered Started At: %s - %s", start, end));
+            }
+
+            case String s1 when s1.startsWith("completed") -> {
+                return prompt.create().filter(DatedEntry::completed).display(__ -> "Filter Completed");
+            }
+
+            case String s1 when s1.startsWith("tag") -> {
+                if (userInput.length < 3) { // Need to validate here since index is passed to prompt
+                    return "Invalid input";
+                }
+                return prompt.create()
+                        .filter(t -> t.tags().contains(userInput[2]))
+                        .display(__ -> "Filtered Tag: " + userInput[2]);
+            }
+
+            case String s1 when s1.startsWith("name") -> {
+                if (userInput.length < 3) {// Need to validate here since index is passed to prompt
+                    printLnToTerminal("Invalid input");
+                }
+                return prompt.create()
+                        .filter(t -> t.name().toLowerCase().contains(userInput[2].toLowerCase()))
+                        .display(__ -> "Filtered: " + userInput[2]);
+            }
+
+            case String s1 when s1.startsWith("all") -> {
+                prompt.resetFiltered();
+                return "Showing All";
+            }
+            default -> { return "Invalid input"; }
+        }
+    }
+
+    public <U extends DatedEntry> int archiveEntries(Predicate<Pair<Integer, U>> predicate,
+            InputPrompt<U> prompt, Consumer<U> archiveConsumer) {
+        List<U> archived = prompt.getIndexedItems().stream().filter(predicate).map(Pair::second).toList();
+        archived.forEach(archiveConsumer);
+        prompt.removeItems(predicate);
+        return  archived.size();
     }
 
     public <U> List<Pair<Integer, U>> getIndexedList(final List<U> items) {
         return IntStream.range(0, items.size())
                 .mapToObj(i -> Pair.of(i, items.get(i))).collect(Collectors.toList());
+    }
+
+    public UnaryOperator<String> stringEntryUpdater = (note) -> {
+        try {
+            return Util.tempEdit(Util.tempNano(terminal), note);
+        } catch (IOException e) {
+            printLnToTerminal("Error opening nano to edit: " + e.getMessage());
+            System.err.println(e.getMessage() + " | " + Arrays.toString(e.getStackTrace()));
+            return note;
+        }
+    };
+
+    public Supplier<String> stringEntryCreator = () -> {
+        try {
+            return Util.tempEdit(Util.tempNano(terminal), "");
+        } catch (IOException e) {
+            printLnToTerminal("Error opening nano: " + e.getMessage());
+            System.err.println(e.getMessage() + " | " + Arrays.toString(e.getStackTrace()));
+            return "";
+        }
+    };
+
+    public void showDataView(String header, String data) {
+        clearAndPrint(TableUtil.basicColumn(header, data));
+        promptInput("Press Enter To Continue...");
     }
 }

@@ -2,13 +2,14 @@ package io.mindspice.toastit.entries.task;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.mindspice.mindlib.data.tuples.Pair;
-import io.mindspice.mindlib.util.JsonUtils;
+import io.mindspice.toastit.entries.CompletableEntry;
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.entries.Entry;
 import io.mindspice.toastit.enums.EntryType;
-import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.toastit.notification.Reminder;
 import io.mindspice.toastit.util.DateTimeUtil;
 import io.mindspice.toastit.util.JSON;
+import io.mindspice.toastit.util.TableUtil;
 import io.mindspice.toastit.util.Util;
 
 import java.io.File;
@@ -19,7 +20,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
@@ -37,7 +37,7 @@ public record TaskEntry(
         List<Reminder> reminders,
         UUID uuid,
         Path basePath
-) implements Task<TaskEntry>, Entry {
+) implements  Entry,  DatedEntry, CompletableEntry<TaskEntry> {
 
     public TaskEntry {
         dueBy = dueBy.truncatedTo(ChronoUnit.MINUTES);
@@ -106,14 +106,14 @@ public record TaskEntry(
     public boolean completed() {
         return subtasks.isEmpty()
                 ? completed
-                : subtasks.stream().allMatch(Task::completed);
+                : subtasks.stream().allMatch(CompletableEntry::completed);
     }
 
     @Override
     public double completionDbl() {
         return subtasks.isEmpty()
                 ? (completed ? 1 : 0)
-                : subtasks.stream().mapToDouble(Task::completionDbl).average().orElse(1);
+                : subtasks.stream().mapToDouble(CompletableEntry::completionDbl).average().orElse(1);
     }
 
     @Override
@@ -124,11 +124,6 @@ public record TaskEntry(
     @Override
     public EntryType type() {
         return EntryType.TASK;
-    }
-
-    @Override
-    public String shortText() {
-        return null;
     }
 
     @Override
@@ -215,7 +210,7 @@ public record TaskEntry(
                 rntList.add(Pair.of("Name", name));
             }
             if (!description.isEmpty()) {
-                rntList.add(Pair.of("Description", description));
+                rntList.add(Pair.of("Description", TableUtil.truncateString(description)));
             }
             if (!tags.isEmpty()) {
                 rntList.add(Pair.of("Tags", tags.toString()));
@@ -227,7 +222,7 @@ public record TaskEntry(
             }
             if (!notes.isEmpty()) {
                 IntStream.range(0, notes.size()).forEach(i -> rntList.add(
-                        Pair.of(String.format("Note %d", i + 1), notes.get(i))
+                        Pair.of(String.format("Note %d", i + 1), TableUtil.truncateString(notes.get(i)))
                 ));
             }
             if (!dueBy.equals(DateTimeUtil.MAX)) {
@@ -250,7 +245,7 @@ public record TaskEntry(
                 rntList.add(Pair.of("Name", name));
             }
             if (!description.isEmpty()) {
-                rntList.add(Pair.of("Description", description));
+                rntList.add(Pair.of("Description", TableUtil.truncateString(description)));
             }
             rntList.add(Pair.of("Started", String.valueOf(started)));
             if (started) {
@@ -274,7 +269,7 @@ public record TaskEntry(
             }
             if (!notes.isEmpty()) {
                 IntStream.range(0, notes.size()).forEach(i -> rntList.add(
-                        Pair.of(String.format("Note %d", i + 1), notes.get(i))
+                        Pair.of(String.format("Note %d", i + 1), TableUtil.truncateString(notes.get(i)))
                 ));
             }
             if (!reminders.isEmpty()) {

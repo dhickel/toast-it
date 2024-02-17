@@ -61,20 +61,18 @@ public class App {
         eventManager = new EventManager();
         taskManager = new TaskManager();
 
-        var loadResult = scheme.loadSchemeFile(new File("scheme_files/post-init.scm"));
+
+        eventManager.init();
+        taskManager.init();
+        shell = new ApplicationShell(scheme);
+
+       // scheme.defineObject("ShellInstance", shell);
+
+      var loadResult = scheme.loadSchemeFile(new File("scheme_files/post-init.scm"));
         if (!loadResult.valid()) {
             System.err.println("Error loading post-init.scm: " + loadResult.exception().orElseThrow());
             System.out.println(Arrays.toString(loadResult.exception().get().getStackTrace()));
         }
-        eventManager.init();
-        taskManager.init();
-        shell = new ApplicationShell(scheme);
-        scheme.defineObject("ShellInstance", shell);
-//        scheme.safeEval("""
-//                (define (sys-exec input)
-//                  (run-process shell: #t out-to: (ShellInstance:getOutput) input))
-//                """);
-
         return INSTANCE;
     }
 
@@ -84,6 +82,10 @@ public class App {
 
     public ScheduledExecutorService getExec() {
         return exec;
+    }
+
+    public ApplicationShell getShell(){
+        return shell;
     }
 
     public EventManager getEventManager() {

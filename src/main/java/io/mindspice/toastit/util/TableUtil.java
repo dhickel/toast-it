@@ -3,6 +3,7 @@ package io.mindspice.toastit.util;
 import com.github.freva.asciitable.*;
 import io.mindspice.mindlib.data.tuples.Pair;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,7 +28,7 @@ public class TableUtil {
     public static <T> ColumnData<T> createColumn(String header, Function<T, String> printFunc, int minWidth, int maxWidth) {
         var col = new Column()
                 .minWidth(Math.min(minWidth, maxWidth))
-                .maxWidth(maxWidth,  Settings.TABLE_OVERFLOW_BEHAVIOR);
+                .maxWidth(maxWidth, Settings.TABLE_OVERFLOW_BEHAVIOR);
 
         if (!header.isEmpty()) {
             col.header(header).headerAlign(HorizontalAlign.CENTER);
@@ -42,10 +43,15 @@ public class TableUtil {
         );
     }
 
-    public static String basicRow(int offset, String ... items) {
+    public static String basicColumn(String header, String data) {
+        ColumnData<String> column = createColumn("Header", Object::toString);
+        return generateTable(List.of(data), List.of(column));
+    }
+
+    public static String basicRow(int offset, String... items) {
         StringBuilder top = new StringBuilder(" ".repeat(offset) + "+");
-        StringBuilder mid = new StringBuilder(" ".repeat(offset) +"|");
-        StringBuilder bottom = new StringBuilder(" ".repeat(offset) +"+");
+        StringBuilder mid = new StringBuilder(" ".repeat(offset) + "|");
+        StringBuilder bottom = new StringBuilder(" ".repeat(offset) + "+");
         for (var s : items) {
             int len = s.length();
             top.append("-".repeat(len + 2)).append("+");
@@ -68,7 +74,8 @@ public class TableUtil {
     public static String addTableHeader(String header, String table) {
         String[] splitTable = table.split("\n");
         int tableLen = splitTable[0].length();
-        int padLen = Math.max(tableLen - 2, header.length());
+        header = " " + header + " ";
+        int padLen = Math.max(tableLen - 2, header.length() + 2);
 
         Character[] b = TableConfig.BORDER;
         String top = String.format("%s%s%s", b[0].toString(), b[1].toString().repeat(padLen), b[3].toString());
@@ -76,7 +83,8 @@ public class TableUtil {
         splitTable[0] = String.format("%s%s%s", b[7], splitTable[0].substring(1, tableLen - 1), b[10]);
         if (tableLen < padLen) {
             if (splitTable.length == 2) {
-                return String.join("\n", top, mid, top);
+                String bottom = String.format("%s%s%s", b[25].toString(), b[1].toString().repeat(padLen), b[28].toString());
+                return String.join("\n", top, mid, bottom);
             } else {
                 return String.join(
                         "\n",
@@ -201,6 +209,13 @@ public class TableUtil {
             result.add(line.substring(0, lastSpace + 1)); // Include the previous space
             processLine(line.substring(lastSpace + 1), maxLength, result);
         }
+    }
+
+    public static String truncateString(String s) {
+        if (s.length() < Settings.MAX_PREVIEW_LENGTH) {
+            return s;
+        }
+        return s.substring(0, Settings.MAX_PREVIEW_LENGTH);
     }
 
 

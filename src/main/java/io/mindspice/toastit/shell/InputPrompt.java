@@ -4,12 +4,13 @@ import io.mindspice.mindlib.data.tuples.Pair;
 import io.mindspice.toastit.entries.task.TaskEntry;
 import io.mindspice.toastit.util.Util;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.*;
 
 
 public class InputPrompt<T> {
-    private final List<Pair<Integer, T>> allItems;
+    private List<Pair<Integer, T>> allItems;
     private List<Pair<Integer, T>> filtered;
 
     public InputPrompt(List<Pair<Integer, T>> items) {
@@ -23,6 +24,27 @@ public class InputPrompt<T> {
 
     public List<Pair<Integer, T>> getFiltered() {
         return filtered;
+    }
+
+    public List<T> getItems() {
+        return allItems.stream().map(Pair::second).toList();
+    }
+
+    public List<Pair<Integer, T>> getIndexedItems() {
+        return Collections.unmodifiableList(allItems);
+    }
+
+    public void updateAll(UnaryOperator<T> operator) {
+        allItems = allItems.stream().map(i -> Pair.of(i.first(), operator.apply(i.second()))).toList();
+    }
+
+    public void addItem(T item) {
+        allItems.add(Pair.of(allItems.getLast().first() + 1, item));
+    }
+
+    public void removeItems(Predicate<Pair<Integer, T>> predicate) {
+        allItems.removeIf(predicate);
+        filtered = allItems;
     }
 
     public Prompt create() {
@@ -79,6 +101,10 @@ public class InputPrompt<T> {
         public Prompt filter(Predicate<T> predicate) {
             filter = predicate;
             return this;
+        }
+
+        public int selectedIndex() {
+            return index;
         }
 
         public Prompt listAction(Consumer<List<Pair<Integer, T>>> consumer) {

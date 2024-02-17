@@ -21,16 +21,10 @@
     (set-static Settings `DATE_TIME_SHORT_PATTERN "EEEE, MMM dd '@' HH:mm")
     ))
 
-(define (editor-settings)
-  (set-static Settings `NOTE_EDITOR (JString "nano"))
-  (set-static Settings `DESCRIPTION_EDITOR (JString "nano"))
-  (set-static Settings 'JOURNAL_EDITOR (JString "nano"))
-  )
-
 
 (define (load-global-table-settings)
   (begin
-    (set-static Settings 'TABLE_MAX_COLUMN_WIDTH 40)
+    (set-static Settings 'TABLE_MAX_COLUMN_WIDTH 200)
     (set-static Settings 'TABLE_DEFAULT_ALIGNMENT (HorizontalAlign:.CENTER))
     (set-static Settings ' TABLE_OVERFLOW_BEHAVIOR (OverflowBehaviour:.ELLIPSIS_LEFT))
     ))
@@ -63,6 +57,7 @@
   (begin
     (set-static Settings `TASK_REFRESH_INV_MIN 240)
     (set-static Settings `TASK_NOTIFY_FADE_TIME_SEC (* 60 60))
+    (set-static Settings `TASK_NOTE_PREVIEW_LENGTH 1000)
     ))
 
 

@@ -1,5 +1,6 @@
 package io.mindspice.toastit.util;
 
+import gnu.expr.CompiledProc;
 import io.mindspice.toastit.enums.EntryType;
 import org.jline.builtins.Nano;
 import org.jline.terminal.Terminal;
@@ -87,7 +88,7 @@ public class Util {
         };
     }
 
-    public static String tempEdit(Consumer<File> consumer, String existingData) throws IOException {
+    public static String tempEdit(Consumer<Path> consumer, String existingData) throws IOException {
 
         Path tempPath = Paths.get(Settings.TEMP_PATH);
         String tempId = UUID.randomUUID().toString();
@@ -97,8 +98,7 @@ public class Util {
         }
         Path tempFile = Files.createTempFile(tempPath, tempId, ".temp");
         Files.write(tempFile, existingData.getBytes());
-        var f = tempFile.toFile();
-        consumer.accept(tempFile.toFile());
+        consumer.accept(tempFile);
 
         String newData = Files.readString(tempFile);
         Files.delete(tempFile);

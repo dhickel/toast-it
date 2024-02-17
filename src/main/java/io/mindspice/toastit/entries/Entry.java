@@ -9,6 +9,4 @@ public interface Entry {
     String name();
     List<String> tags();
     EntryType type();
-    String shortText();
-
 }

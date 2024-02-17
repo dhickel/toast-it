@@ -1,6 +1,7 @@
 package io.mindspice.toastit.entries.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.entries.Entry;
 import io.mindspice.toastit.enums.EntryType;
 import io.mindspice.toastit.enums.NotificationLevel;
@@ -26,7 +27,7 @@ public record EventEntry(
         List<Reminder> reminders,
         UUID linkedUUID,
         boolean completed
-) implements Entry {
+) implements Entry, DatedEntry {
     public EventEntry asCompleted() {
         return new EventEntry(uuid, name, tags, startTime, endTime, reminders, linkedUUID, true);
     }
@@ -65,8 +66,18 @@ public record EventEntry(
     }
 
     @Override
-    public String shortText() {
-        return name + "|" + DateTimeUtil.printDateTimeFull(startTime);
+    public LocalDateTime startedAt() {
+        return startTime;
+    }
+
+    @Override
+    public LocalDateTime dueBy() {
+        return endTime;
+    }
+
+    @Override
+    public LocalDateTime completedAt() {
+        return endTime;
     }
 
     public static class Builder {

@@ -10,14 +10,47 @@
             )))
     (set-static Settings `SHELL_MODES modes)))
 
+ #|
+ Some function definitions that depend on initalization are place here.
+ For example, the run-process functions redirect the output of the process to the shells output stream
+ this allows for the output of the commands to display directly in the shell.
+ This also means come config definitions need put here as well;
+|#
 
-;; Some more function definitions that depend on initalizations
-(define (sys-exec input)
-  (run-process shell: #t out-to: (ShellInstance:getOutput) input))
+;; Post init functions
 
-(define (sys-runnable input)
-  (KRunnable (lambda () (sys-exec input))))
+(define ShellInstance (AppInstance:getShell))
 
+(define (sys-exec cmd . args)
+  (run-process shell: #t out-to: (ShellInstance:getOutput) (apply list cmd args)))
+
+(define (sys-runnable cmd . args)
+  (KRunnable
+    (lambda ()
+      (run-process shell: #t out-to: (ShellInstance:getOutput) (apply list cmd args)))))
+
+(define (editor-consumer cmd . args)
+  (KConsumer:of
+    (lambda (path ::Path)
+      (run-process shell: #t out-to: (ShellInstance:getOutput)
+        (apply list (cons cmd (append args (list ((path:toAbsolutePath):toString)))))))))
+
+
+
+;; Post init config options
+
+;; This is an example of how to define an editor command, you can use multiple args. When ran the path of the file
+;; will be passed as the last arguement, so if the editor you plan on launching needs a flag to specifiy the file
+;; put it at the end for example: (define ex-editor (editor-consumer "myeditor" "-f") will run "myeditor -f /a/path/to/file.file"
+(define vs-code-editor
+  (editor-consumer "code" "-n"))
+
+(define (load-post-config)
+  (begin
+    (Settings:addEditor (JString "vs-code") (Editor (List[JString]:of "code" "-n")))
+
+    ))
 
 (load-shell-modes)
 (load-table-configs)
+(load-post-config)

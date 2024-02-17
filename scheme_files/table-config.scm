@@ -188,7 +188,8 @@
     (TableUtil:createColumn
       (JString "Description")
       (KFunction[Pair[Integer SubTask] JString]
-        (lambda (entry ::Pair[Integer SubTask]) (JString (TableUtil:wrapString ((entry:second):description) 170))))
+        (lambda (entry ::Pair[Integer SubTask])
+          (JString (TableUtil:wrapString (TableUtil:truncateString ((entry:second):description)) 170))))
       170 170)
     (TableUtil:createColumn
       (JString "Completed At")
@@ -218,7 +219,8 @@
     (TableUtil:createColumn
       (JString "Description")
       (KFunction[TaskEntry JString]
-        (lambda (entry ::TaskEntry) (JString (TableUtil:wrapString (entry:description) 248))))
+        (lambda (entry ::TaskEntry)
+          (JString (TableUtil:wrapString (TableUtil:truncateString (entry:description) 248)))))
       250 250)
     ))
 
@@ -232,7 +234,8 @@
     (TableUtil:createColumn
       (JString "Notes")
       (KFunction[Pair[Integer JString] JString]
-        (lambda (entry ::Pair[Integer JString]) (JString (TableUtil:wrapString (entry:second) 242))))
+        (lambda (entry ::Pair[Integer JString])
+          (JString ((TableUtil:wrapString (TableUtil:truncateString (entry:second)) 242)))))
       244 244)
     ))
 

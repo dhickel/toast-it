@@ -13,6 +13,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 
 public record TextEntry(
@@ -31,6 +34,7 @@ public record TextEntry(
         } catch (IOException e) {
             System.err.println("Error creating path for: " + this);
         }
+
     }
 
     public void flushToDisk() {
@@ -96,10 +100,6 @@ public record TextEntry(
         return entryType;
     }
 
-    @Override
-    public String shortText() {
-        return null;
-    }
 
     public static class Builder {
         private final EntryType entryType;

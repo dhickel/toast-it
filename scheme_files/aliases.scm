@@ -25,6 +25,8 @@
 (define-alias IntStream java.util.stream.IntStream)
 (define-alias Duration java.time.Duration)
 (define-alias Runnable java.lang.Runnable)
+(define-alias Path java.nio.file.Path)
+(define-alias Consumer java.util.function.Consumer)
 
 ;; Custom Types
 (define-alias Pair io.mindspice.mindlib.data.tuples.Pair)
@@ -41,6 +43,7 @@
 (define-alias AppShell io.mindspice.toastit.shell.ApplicationShell)
 (define-alias ShellMode io.mindspice.toastit.shell.ShellMode)
 (define-alias Reminder io.mindspice.toastit.notification.Reminder)
+(define-alias Editor io.mindspice.toastit.util.Editor)
 
 ;; Application Shell Evaluators
 (define-alias ShellEvaluator io.mindspice.toastit.shell.evaluators.ShellEvaluator)

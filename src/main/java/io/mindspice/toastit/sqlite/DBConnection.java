@@ -329,10 +329,10 @@ public class DBConnection {
     // INSERT //
     ///////////
 
-    public void upsertEvent(EventEntry eventEntry) throws IOException {
+    public void upsertEvent(EventEntry eventEntry, boolean isArchive) throws IOException {
         EventEntry.Stub entry = eventEntry.getStub();
-        String query = """
-                INSERT INTO events (uuid, name, tags, start_time, end_time, reminders, linked_uuid, completed)
+        String query = String.format("""
+                INSERT INTO %s (uuid, name, tags, start_time, end_time, reminders, linked_uuid, completed)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
                    name = excluded.name,
@@ -342,7 +342,7 @@ public class DBConnection {
                    reminders = excluded.reminders,
                    linked_uuid = excluded.linked_uuid,
                    completed = excluded.completed;
-                """;
+                """, isArchive ? "event_archive" : "events");
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, entry.uuid());
