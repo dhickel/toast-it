@@ -19,6 +19,9 @@
     (set-static Settings `TIME_INPUT_PATTERNS (List[JString]:of "HH:mm" "H:mm" "h:mm a" "h:mma"))
     (set-static Settings `DATE_TIME_FULL_PATTERN "EEEE, MMM dd, yyyy '@' HH:mm")
     (set-static Settings `DATE_TIME_SHORT_PATTERN "EEEE, MMM dd '@' HH:mm")
+    ; Use virtual threads for searchs, more efficent if searching many large files
+    (set-static Settings `THREADED_SEARCH #t)
+    (set-static Settings `SEARCH_TIMEOUT_SEC 60)
     ))
 
 
@@ -57,8 +60,9 @@
   (begin
     (set-static Settings `TASK_REFRESH_INV_MIN 240)
     (set-static Settings `TASK_NOTIFY_FADE_TIME_SEC (* 60 60))
-    (set-static Settings `TASK_NOTE_PREVIEW_LENGTH 1000)
+    (set-static Settings `MAX_PREVIEW_LENGTH 1000)
     ))
+
 
 
 

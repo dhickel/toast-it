@@ -7,15 +7,22 @@ import io.mindspice.toastit.util.Util;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 public class InputPrompt<T> {
     private List<Pair<Integer, T>> allItems;
     private List<Pair<Integer, T>> filtered;
 
-    public InputPrompt(List<Pair<Integer, T>> items) {
-        allItems = items;
-        filtered = items;
+    public InputPrompt(List<T> items) {
+        allItems = createdIndexed(items);
+        filtered = allItems;
+    }
+
+    private List<Pair<Integer, T>> createdIndexed(List<T> items) {
+        return IntStream.range(0, items.size())
+                .mapToObj(i -> Pair.of(i, items.get(i))).collect(Collectors.toList());
     }
 
     public void resetFiltered() {
@@ -34,12 +41,17 @@ public class InputPrompt<T> {
         return Collections.unmodifiableList(allItems);
     }
 
+    public void replaceItems(List<T> items) {
+        allItems = createdIndexed(items);
+        filtered = allItems;
+    }
+
     public void updateAll(UnaryOperator<T> operator) {
         allItems = allItems.stream().map(i -> Pair.of(i.first(), operator.apply(i.second()))).toList();
     }
 
     public void addItem(T item) {
-        allItems.add(Pair.of(allItems.getLast().first() + 1, item));
+        allItems.add(Pair.of(!allItems.isEmpty() ? allItems.getLast().first() + 1 : 0, item));
     }
 
     public void removeItems(Predicate<Pair<Integer, T>> predicate) {
@@ -59,9 +71,11 @@ public class InputPrompt<T> {
         private UnaryOperator<T> itemUpdate;
         private Consumer<List<Pair<Integer, T>>> listAction;
         private Predicate<T> filter;
+        private Function<List<T>, T> itemSelector;
         boolean listRemove;
+        Runnable waitPrompt;
         private T item;
-        private int index;
+        private int index = -1;
 
         public Prompt validateAndGetIndex(String input) {
             indexPred = () -> {
@@ -98,6 +112,17 @@ public class InputPrompt<T> {
             return this;
         }
 
+        public Prompt forceSelect(T forceItem) {
+            Pair<Integer, T> selection = allItems.stream().filter(i -> i.second().equals(forceItem)).findFirst().orElse(null);
+            for (int i = 0; i < allItems.size(); ++i) {
+                if (allItems.get(i).second().equals(forceItem)) {
+                    item = allItems.get(i).second();
+                    index = i;
+                }
+            }
+            return this;
+        }
+
         public Prompt filter(Predicate<T> predicate) {
             filter = predicate;
             return this;
@@ -117,6 +142,11 @@ public class InputPrompt<T> {
             return this;
         }
 
+        public Prompt waitPrompt(Runnable waitPrompt) {
+            this.waitPrompt = waitPrompt;
+            return this;
+        }
+
         public T getItem() {
             return item;
         }
@@ -130,6 +160,13 @@ public class InputPrompt<T> {
                 return "Invalid Index";
             }
 
+            if (itemSelector != null) {
+                item = itemSelector.apply(getItems());
+                if (item == null) {
+                    return "No Item Found";
+                }
+            }
+
             if (confirmPred != null && !confirmPred.getAsBoolean()) {
                 return "";
             }
@@ -141,12 +178,18 @@ public class InputPrompt<T> {
             }
 
             if (itemUpdate != null) {
+                if (item == null || index == -1) {
+                    return "No Item Selected";
+                }
                 item = itemUpdate.apply(item);
                 allItems.set(index, Pair.of(index, item));
 
             }
 
             if (itemConsumer != null) {
+                if (item == null) {
+                    return "No Item Selected";
+                }
                 itemConsumer.accept(item);
             }
 
@@ -156,6 +199,10 @@ public class InputPrompt<T> {
 
             if (listRemove) {
                 allItems.remove(index);
+            }
+
+            if (waitPrompt != null) {
+                waitPrompt.run();
             }
             return printFunc.apply(item);
 

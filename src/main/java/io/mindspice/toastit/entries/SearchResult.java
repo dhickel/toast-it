@@ -1,4 +1,9 @@
 package io.mindspice.toastit.entries;
 
-public class SearchResult {
-}
+import io.mindspice.toastit.entries.text.TextEntry;
+
+
+public record SearchResult(
+        String matchedLine,
+        TextEntry entry
+) { }

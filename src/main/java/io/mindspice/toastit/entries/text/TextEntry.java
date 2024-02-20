@@ -1,8 +1,11 @@
 package io.mindspice.toastit.entries.text;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.mindspice.mindlib.data.tuples.Pair;
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.entries.Entry;
 import io.mindspice.toastit.enums.EntryType;
+import io.mindspice.toastit.util.DateTimeUtil;
 import io.mindspice.toastit.util.JSON;
 import io.mindspice.toastit.util.Util;
 
@@ -25,7 +28,7 @@ public record TextEntry(
         List<String> tags,
         UUID uuid,
         Path basePath
-) implements Entry {
+) implements Entry, DatedEntry {
 
     public TextEntry {
         createdAt = createdAt.truncatedTo(ChronoUnit.MINUTES);
@@ -79,7 +82,7 @@ public record TextEntry(
                 name,
                 createdAt.atZone(ZoneId.systemDefault()).toInstant().getEpochSecond(),
                 JSON.writeString(tags),
-                getMetaPath().toString()
+                basePath.toString()
         );
     }
 
@@ -96,18 +99,42 @@ public record TextEntry(
     }
 
     @Override
+    public String description() {
+        return name;
+    }
+
+    @Override
     public EntryType type() {
         return entryType;
     }
 
+    @Override
+    public LocalDateTime startedAt() {
+        return createdAt;
+    }
+
+    @Override
+    public LocalDateTime dueBy() {
+        return createdAt;
+    }
+
+    @Override
+    public LocalDateTime completedAt() {
+        return createdAt;
+    }
+
+    @Override
+    public boolean completed() {
+        return true;
+    }
 
     public static class Builder {
         private final EntryType entryType;
-        private String name = "Unnamed";
-        private LocalDateTime createdAt = LocalDateTime.now();
-        private List<String> tags = new ArrayList<>();
+        public String name = "";
+        public LocalDateTime createdAt = DateTimeUtil.MAX;
+        public List<String> tags = new ArrayList<>();
         private UUID uuid = UUID.randomUUID();
-        private Path basePath;
+        public Path basePath;
 
         public Builder(EntryType entryType) {
             this.entryType = entryType;
@@ -120,31 +147,6 @@ public record TextEntry(
             this.tags = new ArrayList<>(n.tags);
             this.uuid = n.uuid;
             this.basePath = n.basePath;
-        }
-
-        public Builder setName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder setCreatedAt(LocalDateTime createdAt) {
-            this.createdAt = createdAt;
-            return this;
-        }
-
-        public Builder setTags(List<String> tags) {
-            this.tags = tags;
-            return this;
-        }
-
-        public Builder addTag(String tag) {
-            this.tags.add(tag);
-            return this;
-        }
-
-        public Builder removeTag(String tag) {
-            this.tags.remove(tag);
-            return this;
         }
 
         public TextEntry build() throws IOException {
@@ -161,6 +163,17 @@ public record TextEntry(
                     basePath
             );
         }
+
+        public List<Pair<String, String>> toTableState() {
+            List<Pair<String, String>> rntList = new ArrayList<>(5);
+            if (!name.isEmpty()) {
+                rntList.add(Pair.of("Name", name));
+            }
+            if (!tags.isEmpty()) {
+                rntList.add(Pair.of("Tags", tags.toString()));
+            }
+            return rntList;
+        }
     }
 
 
@@ -171,6 +184,15 @@ public record TextEntry(
             String tags,
             String metaPath
     ) {
-
+        public TextEntry getAsFull(EntryType entryType) {
+            return new TextEntry(
+                    entryType,
+                    name,
+                    DateTimeUtil.unixToLocal(createdAt),
+                    JSON.jsonArrayToStringList(tags),
+                    UUID.fromString(uuid),
+                    Path.of(metaPath)
+            );
+        }
     }
 }

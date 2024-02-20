@@ -10,7 +10,6 @@ import io.mindspice.toastit.util.Tag;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
@@ -37,7 +36,7 @@ public class TaskManager {
         return activeTasks;
     }
 
-    public List<TaskEntry> getAllUncompleted() throws IOException {
+    public List<TaskEntry> getAllTasks() throws IOException {
         List<TaskEntry.Stub> stubs = App.instance().getDatabase().getAllTasks();
         List<TaskEntry> tasks = new ArrayList<>(stubs.size());
         for (var stub : stubs) {
@@ -51,7 +50,7 @@ public class TaskManager {
     }
 
     public void addTask(TaskEntry task) throws IOException {
-        App.instance().getDatabase().upsertTask(task, false);
+        App.instance().getDatabase().upsertTask(task);
         if (task.started()) {
             List<ScheduledNotification> notifications = createTaskReminders.apply(task);
             scheduledNotifications.addAll(notifications);
@@ -82,9 +81,8 @@ public class TaskManager {
 
     public void archiveTask(TaskEntry task) {
         try {
-            App.instance().getDatabase().deleteTaskByUUID(task.uuid());
             removeFromScheduled(task.uuid());
-            App.instance().getDatabase().upsertTask(task, true);
+            App.instance().getDatabase().archiveTask(task.uuid(), true);
         } catch (IOException e) {
             System.err.println("Error archiving task: " + task.uuid() + "| " + Arrays.toString(e.getStackTrace()));
         }
@@ -101,7 +99,7 @@ public class TaskManager {
 
         List<ScheduledNotification> newNotifications = new ArrayList<>();
         task.reminders().forEach(reminder -> {
-            ProcessBuilder notification = Notify.newTaskNotify(
+            ProcessBuilder notification = Notify.newDueByNotify(
                     task.tags().isEmpty() ? Tag.Default() : Settings.getTag(task.tags().getFirst()),
                     task,
                     reminder.level()

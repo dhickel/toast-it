@@ -2,12 +2,17 @@ package io.mindspice.toastit.entries.project;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.mindspice.mindlib.data.tuples.Pair;
+import io.mindspice.toastit.App;
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.entries.Entry;
 import io.mindspice.toastit.entries.task.TaskEntry;
 import io.mindspice.toastit.entries.CompletableEntry;
 import io.mindspice.toastit.enums.EntryType;
 import io.mindspice.toastit.notification.Reminder;
+import io.mindspice.toastit.util.DateTimeUtil;
 import io.mindspice.toastit.util.JSON;
+import io.mindspice.toastit.util.TableUtil;
 import io.mindspice.toastit.util.Util;
 
 import java.io.File;
@@ -18,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.IntStream;
 
 
 public record ProjectEntry(
@@ -28,6 +34,7 @@ public record ProjectEntry(
         @JsonIgnore
         List<TaskEntry> taskObjs,
         String description,
+        List<String> notes,
         List<String> tags,
         Path projectPath,
         LocalDateTime dueBy,
@@ -36,15 +43,20 @@ public record ProjectEntry(
         List<Reminder> reminders,
         UUID uuid,
         Path basePath,
-        String openWith,
-        boolean hasNote
-) implements CompletableEntry<ProjectEntry>, Entry {
+        String openWith
+) implements CompletableEntry<ProjectEntry>, DatedEntry, Entry {
 
     public ProjectEntry {
         dueBy = dueBy.truncatedTo(ChronoUnit.MINUTES);
         startedAt = startedAt.truncatedTo(ChronoUnit.MINUTES);
         completedAt = completedAt.truncatedTo(ChronoUnit.MINUTES);
-        taskObjs = taskObjs == null ? List.of() : taskObjs;
+
+        if ((taskObjs == null || taskObjs.isEmpty()) & !tasks.isEmpty()) { ;
+            taskObjs = Collections.unmodifiableList(loadTasks(tasks));
+        } else if (tasks.isEmpty()) {
+            tasks = List.of();
+            taskObjs = List.of();
+        }
         try {
             basePath = basePath == null ? Util.getEntriesPath(EntryType.PROJECT) : basePath;
         } catch (IOException e) {
@@ -52,17 +64,24 @@ public record ProjectEntry(
         }
     }
 
-    public void loadTasks() {
-        tasks.forEach(uuid -> {
-//            try {
-//                FullTaskEntry task = DBConnection.instance().getTask(uuid);
-//                if (task != null) {
-//                    taskObjs.add(task);
-//                }
-//            } catch (IOException e) {
-//                // TODO push this to terminal
-//            }
+    public List<TaskEntry> loadTasks(List<UUID> taskUUIDs) {
+        if (taskUUIDs == null) {
+            return List.of();
+        }
+        List<TaskEntry> loadedTasks = new ArrayList<>();
+        taskUUIDs.forEach(uuid -> {
+            try {
+                TaskEntry task = App.instance().getDatabase().getTaskByUUID(uuid);
+                if (task != null) {
+                    loadedTasks.add(task);
+                } else {
+                    System.err.printf("Task: %s null for project: %s", uuid, this.uuid);
+                }
+            } catch (IOException e) {
+                System.err.println("Error lading task" + e);
+            }
         });
+        return loadedTasks;
     }
 
     public void flushToDisk() {
@@ -92,8 +111,7 @@ public record ProjectEntry(
                 JSON.writeString(reminders.stream().map(Reminder::getStub).toList()),
                 getFile().toString(),
                 projectPath.toString(),
-                openWith,
-                hasNote
+                openWith
         );
     }
 
@@ -104,16 +122,16 @@ public record ProjectEntry(
     @Override
     public ProjectEntry asCompleted(LocalDateTime time) {
         return new ProjectEntry(
-                name, started, true, tasks, taskObjs, description, tags, projectPath,
-                dueBy, startedAt, time, reminders, uuid, basePath, openWith, hasNote
+                name, started, true, tasks, taskObjs, description, notes, tags, projectPath,
+                dueBy, startedAt, time, reminders, uuid, basePath, openWith
         );
     }
 
     @Override
     public ProjectEntry asStarted(LocalDateTime time) {
         return new ProjectEntry(
-                name, true, completed, tasks, taskObjs, description, tags, projectPath,
-                dueBy, time, completedAt, reminders, uuid, basePath, openWith, hasNote
+                name, true, completed, tasks, taskObjs, description, notes, tags, projectPath,
+                dueBy, time, completedAt, reminders, uuid, basePath, openWith
         );
     }
 
@@ -141,11 +159,6 @@ public record ProjectEntry(
         return EntryType.PROJECT;
     }
 
-    @Override
-    public String shortText() {
-        return null;
-    }
-
     public static Builder builder() {
         return new Builder();
     }
@@ -155,22 +168,22 @@ public record ProjectEntry(
     }
 
     public static class Builder {
-        public String name = "Unnamed";
+        public String name = "";
         public boolean started = false;
         public boolean completed = false;
         public List<UUID> tasks = new ArrayList<>();
-        public List<TaskEntry> taskObjs = new ArrayList<>();
+        public List<TaskEntry> taskObjs = new ArrayList<>(2);
         public String description = "";
-        public List<String> tags = new ArrayList<>();
+        public List<String> notes = new ArrayList<>(2);
+        public List<String> tags = new ArrayList<>(2);
         public Path projectPath = Path.of("/");
-        public LocalDateTime dueBy = LocalDateTime.MAX;
-        public LocalDateTime startedAt = LocalDateTime.MAX;
-        public LocalDateTime completedAt = LocalDateTime.MAX;
-        public List<Reminder> reminders;
+        public LocalDateTime dueBy = DateTimeUtil.MAX;
+        public LocalDateTime startedAt = DateTimeUtil.MAX;
+        public LocalDateTime completedAt = DateTimeUtil.MAX;
+        public List<Reminder> reminders = new ArrayList<>(2);
         public UUID uuid = UUID.randomUUID();
         public Path basePath;
         public String openWith = "";
-        public boolean hasNote;
 
         public Builder() { }
 
@@ -181,6 +194,7 @@ public record ProjectEntry(
             this.tasks = new ArrayList<>(p.tasks);
             this.taskObjs = new ArrayList<>(p.taskObjs);
             this.description = p.description;
+            this.notes = p.notes;
             this.tags = new ArrayList<>(p.tags);
             this.projectPath = p.projectPath;
             this.dueBy = p.dueBy;
@@ -190,7 +204,6 @@ public record ProjectEntry(
             this.uuid = p.uuid;
             this.basePath = p.basePath;
             this.openWith = p.openWith;
-            this.hasNote = p.hasNote;
         }
 
         public ProjectEntry build() throws IOException {
@@ -204,6 +217,7 @@ public record ProjectEntry(
                     Collections.unmodifiableList(tasks),
                     Collections.unmodifiableList(taskObjs),
                     description,
+                    notes,
                     Collections.unmodifiableList(tags),
                     projectPath,
                     dueBy,
@@ -212,9 +226,52 @@ public record ProjectEntry(
                     reminders,
                     uuid,
                     basePath,
-                    openWith,
-                    hasNote
+                    openWith
             );
+        }
+
+        public List<Pair<String, String>> toTableState() {
+            List<Pair<String, String>> rntList = new ArrayList<>();
+            if (!name.isEmpty()) {
+                rntList.add(Pair.of("Name", name));
+            }
+            if (!description.isEmpty()) {
+                rntList.add(Pair.of("Description", TableUtil.truncateString(description)));
+            }
+            if (!tags.isEmpty()) {
+                rntList.add(Pair.of("Tags", tags.toString()));
+            }
+            if (!taskObjs.isEmpty()) {
+                IntStream.range(0, taskObjs.size()).forEach(i -> rntList.add(
+                        Pair.of(String.format("Task %d", i + 1), taskObjs.get(i).name())
+                ));
+            }
+            if (!notes.isEmpty()) {
+                IntStream.range(0, notes.size()).forEach(i -> rntList.add(
+                        Pair.of(String.format("Note %d", i + 1), TableUtil.truncateString(notes.get(i)))
+                ));
+            }
+            if (!projectPath.toString().equals("/")) {
+                rntList.add(Pair.of("Project Path", projectPath.toString()));
+            }
+            rntList.add(Pair.of("Started", String.valueOf(started)));
+            if (started) {
+                rntList.add(Pair.of("Started At", DateTimeUtil.printDateTimeFull(startedAt)));
+
+            }
+            if (!dueBy.equals(DateTimeUtil.MAX)) {
+                rntList.add(Pair.of("Due By", DateTimeUtil.printDateTimeFull(dueBy)));
+            }
+            rntList.add(Pair.of("Completed", String.valueOf(completed)));
+            if (completed) {
+                rntList.add(Pair.of("Completed At", DateTimeUtil.printDateTimeFull(completedAt)));
+            }
+            if (!reminders.isEmpty()) {
+                IntStream.range(0, reminders.size()).forEach(i -> rntList.add(
+                        Pair.of(String.format("Reminder %d", i + 1), reminders.get(i).toString())
+                ));
+            }
+            return rntList;
         }
     }
 
@@ -231,8 +288,7 @@ public record ProjectEntry(
             String reminders,
             String metaPath,
             String projectPath,
-            String openWith,
-            boolean hasNote
+            String openWith
     ) { }
 
 }

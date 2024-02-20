@@ -24,12 +24,24 @@ public class Settings {
 
     // Edit Settings
 
-
-    public static final Map<String, Consumer<Path>> EDITOR_MAP = new HashMap<>();
+    private static final Map<String, Consumer<Path>> EDITOR_MAP = new HashMap<>();
 
     public static void addEditor(String editorName, Consumer<Path> editorConsumer) {
         EDITOR_MAP.put(editorName, editorConsumer);
     }
+
+    public static Consumer<Path> getEditor(String key) {
+        var editor = EDITOR_MAP.get(key);
+        return editor == null ? EDITOR_MAP.get("nano") : editor;
+    }
+
+    public static Consumer<Path> getEditorOr(String key) {
+        var editor = EDITOR_MAP.get(key);
+        return editor == null ? Editor.of(key) : editor;
+    }
+
+    public static String FULL_TEXT_EDITOR;
+    public static String SIMPLE_TEXT_EDITOR;
 
     // TAGS
     public static final Map<String, Tag> TAG_MAP = new HashMap<>();
@@ -42,13 +54,14 @@ public class Settings {
     // Global
     public static int MAX_PREVIEW_LENGTH;
 
-
     // Application
     public static int EXEC_THREADS;
     public static List<String> DATE_INPUT_PATTERNS;
     public static List<String> TIME_INPUT_PATTERNS;
     public static String DATE_TIME_FULL_PATTERN;
     public static String DATE_TIME_SHORT_PATTERN;
+    public static boolean THREADED_SEARCH;
+    public static int SEARCH_TIMEOUT_SEC;
 
     // Events
     public static int EVENT_LOOK_FORWARD_DAYS;
@@ -76,7 +89,6 @@ public class Settings {
 
     // Global Table Settings
     public static int TABLE_MAX_COLUMN_WIDTH;
-    public static int TABLE_HORIZONTAL_LIST_SPACING = 10;
     public static HorizontalAlign TABLE_DEFAULT_ALIGNMENT;
     public static OverflowBehaviour TABLE_OVERFLOW_BEHAVIOR;
 

@@ -61,6 +61,11 @@ public record EventEntry(
     }
 
     @Override
+    public String description() {
+        return String.format("%s | %s", DateTimeUtil.printDateTimeFull(startTime), name);
+    }
+
+    @Override
     public EntryType type() {
         return EntryType.EVENT;
     }

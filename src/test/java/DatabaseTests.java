@@ -89,6 +89,9 @@ public class DatabaseTests {
         EventEntry fullEntry = db.getEventByUUID(eventUUID);
 
         assertEquals(event, fullEntry);
+        db.deleteEventByUUID(event.uuid());
+        db.upsertEvent(event);
+        db.archiveEvent(event.uuid(), true);
     }
 
     @Test
@@ -113,7 +116,7 @@ public class DatabaseTests {
                 path
         );
 
-        db.upsertTask(task, false);
+        db.upsertTask(task);
 
         // Assert db storage/retrieval
         TaskEntry.Stub ogStub = task.getStub();
@@ -124,6 +127,8 @@ public class DatabaseTests {
         task.flushToDisk();
         TaskEntry readTask = db.getTaskByUUID(task.uuid());
         assertEquals(task, readTask);
+
+        db.deleteTaskByUUID(task.uuid());
     }
 
     @Test
@@ -174,6 +179,7 @@ public class DatabaseTests {
                 List.of(taskUUID, task2UUID),
                 List.of(task, task2),
                 "This is a project",
+                List.of("test note 1,", "testNote2"),
                 List.of("ProjectTag1", "ProjectTag2"),
                 Path.of("/home/mindspice/code/java"),
                 LocalDateTime.now().plusMonths(1),
@@ -183,12 +189,10 @@ public class DatabaseTests {
                         new Reminder(LocalDateTime.now().minusDays(3), NotificationLevel.NORMAL)),
                 projectUUID,
                 projectPath,
-                "code",
-                true
-
+                "code"
         );
 
-        db.upsertProject(project, false);
+        db.upsertProject(project);
 
         // asset from db
         ProjectEntry.Stub ogStub = project.getStub();
@@ -204,6 +208,10 @@ public class DatabaseTests {
         builder.taskObjs = List.of();
         ProjectEntry woTasks = builder.build();
         assertEquals(woTasks, readProject);
+
+        db.deleteProjectByUUID(projectUUID);
+
+
     }
 
     @Test

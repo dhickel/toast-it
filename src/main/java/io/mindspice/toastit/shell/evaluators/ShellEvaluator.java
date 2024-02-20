@@ -37,7 +37,7 @@ public abstract class ShellEvaluator<T> {
         this.lineReader = reader;
     }
 
-    public String eval(String input) {
+    public String eval(String input) throws IOException {
         for (var cmd : commands) {
             if (cmd.match(input)) {
                 try {
@@ -45,7 +45,9 @@ public abstract class ShellEvaluator<T> {
                     T self = (T) this;
                     return cmd.eval(self, input);
                 } catch (Exception e) {
-                    System.err.printf("Error evaluating in class: %s, Error: %s%n", this.getClass(), e);
+
+                    System.err.printf("Error evaluating in class: %s, Error: %s%n", this.getClass(), Arrays.toString(e.getStackTrace()));
+                    e.printStackTrace();
                     return "Exception encountered while executing command: " + e.getMessage();
                 }
             }
@@ -206,14 +208,13 @@ public abstract class ShellEvaluator<T> {
 
     public List<Reminder> promptReminder(LocalDateTime eventTime) {
         List<Reminder> reminders = new ArrayList<>(2);
-        List<String> valid = List.of("day", "days", "hr", "hour", "hours", "min", "minute", "minutes");
 
         while (true) {
             String input = lineReader.readLine("Enter Reminder Interval: ").trim();
 
             String[] splitInput = input.split(" ");
-            if (splitInput.length < 2 || !Util.isInt(splitInput[0]) || !valid.contains(splitInput[1].toLowerCase())) {
-                printLnToTerminal("Invalid Input, Valid intervals: \"# day\", \"# hr\", \"# min\" \"exit\" ex. \"30 min\" ");
+            if (splitInput.length < 2 || !Util.isInt(splitInput[0])) {
+                printLnToTerminal("Invalid Input, format: <#> <min/hour/day/week/month> ");
                 continue;
             }
 
@@ -260,7 +261,7 @@ public abstract class ShellEvaluator<T> {
             );
 
             clearAndPrint(table + "\n");
-            notes.add(stringEntryCreator.get());
+            notes.add(simpleTextEdit(""));
 
             table = TableUtil.generateKeyPairTable(
                     "Notes", notes, (__) -> "Note ",
@@ -270,6 +271,52 @@ public abstract class ShellEvaluator<T> {
             clearAndPrint(table + "\n");
         } while (confirmPrompt("Add another note?"));
         return notes;
+    }
+
+    public List<String> updateNotes(List<String> notes) throws IOException {
+        String cmds = String.join("\n", "\nAvailable Actions:",
+                TableUtil.basicRow(2, "new", "edit <index>", "delete <index>", "done")
+        );
+        InputPrompt<String> prompt = new InputPrompt<>(notes);
+
+        String output = "";
+
+        while (true) {
+            String table = TableUtil.generateIndexedPairTable("Notes", "Note", prompt.getItems(), (note) -> note);
+            clearAndPrint(table + "\n");
+
+            printLnToTerminal(cmds);
+            if (!output.isEmpty()) {
+                printLnToTerminal(output + "\n");
+                output = "";
+            }
+
+            String[] input = promptInput("Action: ").trim().split(" ");
+            switch (input[0]) {
+
+                case String s when s.startsWith("new") -> prompt.addItem(simpleTextEdit(""));
+
+                case String s when s.startsWith("done") -> {
+                    clearScreen();
+                    return prompt.getItems();
+                }
+
+                case String s when s.startsWith("delete") -> output = prompt.create()
+                        .validateInputLength(input, 2)
+                        .validateAndGetIndex(input[1])
+                        .confirm(this::confirmPrompt, entry -> "Delete Note: " + input[0])
+                        .listRemove()
+                        .display(entry -> "Deleted: " + input[0]);
+
+                case String s when s.startsWith("edit") -> output = prompt.create()
+                        .validateInputLength(input, 2)
+                        .validateAndGetIndex(input[1])
+                        .itemUpdate(stringEntryUpdater)
+                        .display(entry -> "Updated: Note" + input[0]);
+
+                default -> output = "Invalid input or index";
+            }
+        }
     }
 
     public List<String> promptTags(String header) {
@@ -295,8 +342,8 @@ public abstract class ShellEvaluator<T> {
     public boolean confirmPrompt(String prompt) {
         while (true) {
             String input = lineReader.readLine(prompt + (prompt.contains("(y/n)")
-                    ? ""
-                    : " (y/n): ")).trim().toLowerCase();
+                                                         ? ""
+                                                         : " (y/n): ")).trim().toLowerCase();
 
             if (input.startsWith("n") || input.startsWith("exit")) {
                 return false;
@@ -336,6 +383,14 @@ public abstract class ShellEvaluator<T> {
                 return prompt.create()
                         .filter(t -> t.dueBy().isAfter(start) && t.dueBy().isBefore(end))
                         .display(__ -> String.format("Filtered Due By: %s - %s", start, end));
+            }
+
+            case String s1 when s1.startsWith("created") -> {
+                LocalDateTime start = promptDate("filter start").atStartOfDay();
+                LocalDateTime end = promptDate("filter end").plusDays(1).atStartOfDay();
+                return prompt.create()
+                        .filter(t -> t.startedAt().isAfter(start) && t.startedAt().isBefore(end))
+                        .display(__ -> String.format("Filtered Created By: %s - %s", start, end));
             }
 
             case String s1 when s1.startsWith("start") -> {
@@ -381,7 +436,7 @@ public abstract class ShellEvaluator<T> {
         List<U> archived = prompt.getIndexedItems().stream().filter(predicate).map(Pair::second).toList();
         archived.forEach(archiveConsumer);
         prompt.removeItems(predicate);
-        return  archived.size();
+        return archived.size();
     }
 
     public <U> List<Pair<Integer, U>> getIndexedList(final List<U> items) {
@@ -391,7 +446,7 @@ public abstract class ShellEvaluator<T> {
 
     public UnaryOperator<String> stringEntryUpdater = (note) -> {
         try {
-            return Util.tempEdit(Util.tempNano(terminal), note);
+            return Util.tempEdit(Util.nanoInstance(terminal), note);
         } catch (IOException e) {
             printLnToTerminal("Error opening nano to edit: " + e.getMessage());
             System.err.println(e.getMessage() + " | " + Arrays.toString(e.getStackTrace()));
@@ -399,18 +454,19 @@ public abstract class ShellEvaluator<T> {
         }
     };
 
-    public Supplier<String> stringEntryCreator = () -> {
+    public String simpleTextEdit(String existing) {
         try {
-            return Util.tempEdit(Util.tempNano(terminal), "");
+            return Util.tempEdit(Settings.getEditorOr(Settings.SIMPLE_TEXT_EDITOR), existing);
         } catch (IOException e) {
-            printLnToTerminal("Error opening nano: " + e.getMessage());
+            printLnToTerminal("Error opening editor: " + e.getMessage());
             System.err.println(e.getMessage() + " | " + Arrays.toString(e.getStackTrace()));
             return "";
         }
-    };
+    }
 
     public void showDataView(String header, String data) {
         clearAndPrint(TableUtil.basicColumn(header, data));
         promptInput("Press Enter To Continue...");
     }
+
 }

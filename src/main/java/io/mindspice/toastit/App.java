@@ -1,6 +1,10 @@
 package io.mindspice.toastit;
 
+import io.mindspice.toastit.entries.TodoManager;
+import io.mindspice.toastit.entries.project.ProjectManager;
 import io.mindspice.toastit.entries.task.TaskManager;
+import io.mindspice.toastit.entries.text.TextManager;
+import io.mindspice.toastit.enums.EntryType;
 import io.mindspice.toastit.sqlite.DBConnection;
 import io.mindspice.toastit.entries.event.EventManager;
 import io.mindspice.kawautils.wrappers.KawaInstance;
@@ -10,7 +14,6 @@ import io.mindspice.toastit.util.Settings;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -26,7 +29,10 @@ public class App {
     //Managers
     private EventManager eventManager;
     private TaskManager taskManager;
-
+    private ProjectManager projectManager;
+    private TextManager noteManager;
+    private TextManager journalManager;
+    private TodoManager todoManager;
 
     static {
         try {
@@ -35,6 +41,7 @@ public class App {
             throw new RuntimeException(e);
         }
     }
+
 
     public static App instance() {
         return INSTANCE;
@@ -60,15 +67,19 @@ public class App {
         exec = Executors.newScheduledThreadPool(Settings.EXEC_THREADS);
         eventManager = new EventManager();
         taskManager = new TaskManager();
-
+        projectManager = new ProjectManager();
+        noteManager = new TextManager();
+        journalManager = new TextManager();
+        todoManager = new TodoManager();
+        shell = new ApplicationShell(scheme);
 
         eventManager.init();
         taskManager.init();
-        shell = new ApplicationShell(scheme);
+        projectManager.init();
+        noteManager.init(EntryType.NOTE);
+        journalManager.init(EntryType.JOURNAL);
 
-       // scheme.defineObject("ShellInstance", shell);
-
-      var loadResult = scheme.loadSchemeFile(new File("scheme_files/post-init.scm"));
+        var loadResult = scheme.loadSchemeFile(new File("scheme_files/post-init.scm"));
         if (!loadResult.valid()) {
             System.err.println("Error loading post-init.scm: " + loadResult.exception().orElseThrow());
             System.out.println(Arrays.toString(loadResult.exception().get().getStackTrace()));
@@ -84,7 +95,7 @@ public class App {
         return exec;
     }
 
-    public ApplicationShell getShell(){
+    public ApplicationShell getShell() {
         return shell;
     }
 
@@ -96,5 +107,19 @@ public class App {
         return taskManager;
     }
 
+    public ProjectManager getProjectManager() {
+        return projectManager;
+    }
 
+    public TextManager getNoteManager() {
+        return noteManager;
+    }
+
+    public TextManager getJournalManager() {
+        return journalManager;
+    }
+
+    public TodoManager getTodoManager() {
+        return todoManager;
+    }
 }

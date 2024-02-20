@@ -63,7 +63,7 @@ public class EventManager {
     }
 
     public void addEvent(EventEntry event) throws IOException {
-        App.instance().getDatabase().upsertEvent(event, false);
+        App.instance().getDatabase().upsertEvent(event);
         int lookForwardDays = Settings.EVENT_LOOK_FORWARD_DAYS;
         if (lookForwardDays == -1 || event.startTime().isAfter(LocalDateTime.now().minusDays(lookForwardDays))) {
             List<ScheduledNotification> notifications = createEventReminders.apply(event);
@@ -90,13 +90,12 @@ public class EventManager {
         }
     }
 
-    public void archiveEvent(EventEntry task) {
+    public void archiveEvent(EventEntry event) {
         try {
-            App.instance().getDatabase().deleteEventByUUID(task.uuid());
-            removeFromScheduled(task.uuid());
-            App.instance().getDatabase().upsertEvent(task, true);
+            removeFromScheduled(event.uuid());
+            App.instance().getDatabase().archiveEvent(event.uuid(), true);
         } catch (IOException e) {
-            System.err.println("Error archiving task: " + task.uuid() + "| " + Arrays.toString(e.getStackTrace()));
+            System.err.println("Error archiving task: " + event.uuid() + "| " + Arrays.toString(e.getStackTrace()));
         }
     }
 

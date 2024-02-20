@@ -27,6 +27,8 @@
 (define-alias Runnable java.lang.Runnable)
 (define-alias Path java.nio.file.Path)
 (define-alias Consumer java.util.function.Consumer)
+(define-alias Predicate java.util.function.Predicate)
+(define-alias IntConsumer java.util.function.IntConsumer)
 
 ;; Custom Types
 (define-alias Pair io.mindspice.mindlib.data.tuples.Pair)
@@ -35,6 +37,7 @@
 ;; Application Classes
 (define-alias Calendar io.mindspice.toastit.calendar.Calendar)
 (define-alias CalendarCell io.mindspice.toastit.calendar.CalendarCell)
+(define-alias Entry io.mindspice.toastit.entries.Entry)
 (define-alias TaskEntry io.mindspice.toastit.entries.task.TaskEntry)
 (define-alias SubTask io.mindspice.toastit.entries.task.SubTask)
 (define-alias TextEntry io.mindspice.toastit.entries.text.TextEntry)
@@ -44,6 +47,7 @@
 (define-alias ShellMode io.mindspice.toastit.shell.ShellMode)
 (define-alias Reminder io.mindspice.toastit.notification.Reminder)
 (define-alias Editor io.mindspice.toastit.util.Editor)
+(define-alias SearchResult io.mindspice.toastit.entries.SearchResult)
 
 ;; Application Shell Evaluators
 (define-alias ShellEvaluator io.mindspice.toastit.shell.evaluators.ShellEvaluator)
@@ -51,11 +55,15 @@
 (define-alias SchemeEval io.mindspice.toastit.shell.evaluators.SchemeEval)
 (define-alias EventEval io.mindspice.toastit.shell.evaluators.EventEval)
 (define-alias TaskEval io.mindspice.toastit.shell.evaluators.TaskEval)
+(define-alias ProjectEval io.mindspice.toastit.shell.evaluators.ProjectEval)
+(define-alias TextEval io.mindspice.toastit.shell.evaluators.TextEval)
+(define-alias TodoEval io.mindspice.toastit.shell.evaluators.TodoEval)
 
 ;; Application Enums
 (define-alias EntryType io.mindspice.toastit.enums.EntryType)
 (define-alias NotificationLevel io.mindspice.toastit.enums.NotificationLevel)
 (define-alias NotificationType io.mindspice.toastit.enums.NotificationType)
+(define-alias EntryType io.mindspice.toastit.enums.EntryType)
 
 
 

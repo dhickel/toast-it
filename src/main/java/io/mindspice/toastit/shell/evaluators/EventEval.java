@@ -165,14 +165,10 @@ public class EventEval extends ShellEvaluator<EventEval> {
 
     }
 
-    public List<Pair<Integer, EventEntry>> getIndexedEvents() {
-        final List<EventEntry> allEvents = eventManager.getAllEvents();
-        return IntStream.range(0, allEvents.size())
-                .mapToObj(i -> Pair.of(i, allEvents.get(i))).toList();
-    }
+
 
     public String manageEvents(String input) {
-        InputPrompt<EventEntry> prompt = new InputPrompt<>(getIndexedEvents());
+        InputPrompt<EventEntry> prompt = new InputPrompt<>(eventManager.getAllEvents());
 
         String cmds = String.join("\n", "\nAvailable Actions:",
                 TableUtil.basicRow(2, "new", "view <index>", "update <index>", "delete <index>", "done"),
@@ -187,7 +183,7 @@ public class EventEval extends ShellEvaluator<EventEval> {
                 printLnToTerminal(cmds);
 
                 if (!output.isEmpty()) {
-                    printLnToTerminal(output + "\n");
+                    printLnToTerminal("\n" + output + "\n");
                     output = "";
                 }
 
@@ -199,7 +195,7 @@ public class EventEval extends ShellEvaluator<EventEval> {
                     }
                     case String s when s.startsWith("new") -> {
                         createNewEvent("");
-                        prompt = new InputPrompt<>(getIndexedEvents());
+                        prompt = new InputPrompt<>(eventManager.getAllEvents()); // TODO we should handle this differnt?
                     }
 
                     case String s when s.startsWith("delete") -> output = prompt.create()
@@ -236,8 +232,9 @@ public class EventEval extends ShellEvaluator<EventEval> {
                     case String s when s.startsWith("archive") -> output = prompt.create()
                             .validateInputLength(userInput, 2)
                             .validateAndGetIndex(userInput[1])
-                            .confirm(this::confirmPrompt, i -> String.format("Archive Event: %s (Irreversible)", i.name()))
+                            .confirm(this::confirmPrompt, i -> String.format("Archive Event: %s ?", i.name()))
                             .itemConsumer(eventManager::archiveEvent)
+                            .listRemove()
                             .display(i -> "Archived: " + i.name());
 
                     default -> output = "Invalid Input";

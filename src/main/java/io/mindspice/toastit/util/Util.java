@@ -1,11 +1,10 @@
 package io.mindspice.toastit.util;
 
-import gnu.expr.CompiledProc;
+import io.mindspice.toastit.entries.Entry;
 import io.mindspice.toastit.enums.EntryType;
 import org.jline.builtins.Nano;
 import org.jline.terminal.Terminal;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,7 +13,6 @@ import java.time.*;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 
 public class Util {
@@ -43,6 +41,10 @@ public class Util {
         return Arrays.copyOfRange(split, 1, split.length);
     }
 
+    public static String removeFirstWord(String s) {
+        return s.substring(s.indexOf(" ") + 1);
+    }
+
     public static <T extends Enum<T>> T enumMatch(T[] enumerations, String matchString) {
         String matchUpper = matchString.toUpperCase();
         List<T> matches = Arrays.stream(enumerations)
@@ -67,11 +69,62 @@ public class Util {
         return bestMatch;
     }
 
+    public static <T extends Entry> T entryMatch(List<T> entries, String matchString) {
+        String matchLower = matchString.toLowerCase().trim();
+
+        List<T> matches = entries.stream()
+                .filter(e -> e.name().trim().toLowerCase().startsWith(matchLower))
+                .toList();
+
+        T bestMatch = null;
+        int mostMatch = 0;
+
+        for (T match : matches) {
+            String matchName = match.name().trim().toLowerCase();
+            int itrLen = Math.min(matchLower.length(), matchName.length());
+            int count = 0;
+            while (count < itrLen && matchLower.charAt(count) == matchName.charAt(count)) {
+                ++count;
+            }
+            if (count > mostMatch) {
+                mostMatch = count;
+                bestMatch = match;
+            }
+        }
+        return bestMatch;
+    }
+
+    public static String stringMatch(List<String> entries, String matchString) {
+
+        String matchLower = matchString.toLowerCase().trim();
+
+        List<String> matches = entries.stream()
+                .filter(e -> e.trim().toLowerCase().startsWith(matchLower))
+                .toList();
+
+        String bestMatch = null;
+        int mostMatch = 0;
+
+        for (String match : matches) {
+            String matchName = match.trim().toLowerCase();
+            int itrLen = Math.min(matchLower.length(), matchName.length());
+            int count = 0;
+            while (count < itrLen && matchLower.charAt(count) == matchName.charAt(count)) {
+                ++count;
+            }
+            if (count > mostMatch) {
+                mostMatch = count;
+                bestMatch = match;
+            }
+        }
+        return bestMatch;
+    }
+
     public static boolean isInt(String s) {
         return s.matches("^\\d+$");
     }
 
-    public static Consumer<Path> tempNano(Terminal terminal) {
+    public static Consumer<Path> nanoInstance(Terminal terminal) {
         return (Path file) -> {
             try {
                 Nano nano = new Nano(terminal, file);

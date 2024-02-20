@@ -1,27 +1,30 @@
 package io.mindspice.toastit.entries.text;
 
-import io.mindspice.mindlib.data.tuples.Pair;
 import io.mindspice.toastit.App;
 import io.mindspice.toastit.entries.SearchResult;
 import io.mindspice.toastit.enums.EntryType;
+import io.mindspice.toastit.util.DateTimeUtil;
 import io.mindspice.toastit.util.Settings;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
 
 
-public class TextEntryManager {
+public class TextManager {
 
     public final List<TextEntry> entries = new CopyOnWriteArrayList<>();
-    public  EntryType type;
+    public EntryType type;
+    public volatile TextEntry dailyJournal;
 
     public void init(EntryType type) throws IOException {
         if (type == EntryType.NOTE) {
             entries.addAll(App.instance().getDatabase().getAllNotes().stream().map(n -> n.getAsFull(EntryType.NOTE)).toList());
         } else if (type == EntryType.JOURNAL) {
-            entries.addAll(App.instance().getDatabase().getAllNotes().stream().map(j -> j.getAsFull(EntryType.JOURNAL)).toList());
+            entries.addAll(App.instance().getDatabase().getAllJournals().stream().map(j -> j.getAsFull(EntryType.JOURNAL)).toList());
         } else {
             throw new IllegalStateException("Invalid Entry Type");
         }
@@ -54,10 +57,23 @@ public class TextEntryManager {
 
     public void updateEntry(TextEntry entry) {
         if (type == EntryType.NOTE) {
-            updateEntry(entry);
+            updateNote(entry);
         } else {
             updateJournal(entry);
         }
+    }
+
+    public TextEntry getDailyJournal() throws IOException {
+        if (dailyJournal == null || dailyJournal.createdAt().truncatedTo(ChronoUnit.DAYS)
+                .isBefore(LocalDateTime.now().truncatedTo(ChronoUnit.DAYS))) {
+            var builder = TextEntry.builder(EntryType.JOURNAL);
+            builder.createdAt = LocalDateTime.now();
+            builder.name = "Daily Journal | " + DateTimeUtil.printDateTimeFull(LocalDateTime.now());
+            builder.tags = List.of("daily");
+            dailyJournal = builder.build();
+            entries.add(dailyJournal);
+        }
+        return dailyJournal;
     }
 
     private void updateNote(TextEntry note) {
@@ -82,7 +98,7 @@ public class TextEntryManager {
         }
     }
 
-    public void deleteEntry(TextEntry entry){
+    public void deleteEntry(TextEntry entry) {
         if (type == EntryType.NOTE) {
             deleteNote(entry);
         } else {
@@ -137,7 +153,6 @@ public class TextEntryManager {
     public List<SearchResult> searchEntries(String searchString) {
         return searchForEntries(searchString, entries);
     }
-
 
     private List<SearchResult> searchForEntries(String searchString, List<TextEntry> searchList) {
         if (Settings.THREADED_SEARCH && searchList.size() > 10) {

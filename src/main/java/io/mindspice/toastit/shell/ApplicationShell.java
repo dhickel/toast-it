@@ -81,7 +81,7 @@ public class ApplicationShell {
             terminal.puts(InfoCmp.Capability.clear_screen);
             terminal.flush();
             output = terminal.output();
-            Settings.EDITOR_MAP.put("nano", Util.tempNano(terminal));
+            Settings.addEditor("nano", Util.nanoInstance(terminal));
 
             LineReader reader = initLineReader();
             initWidgets(reader);
@@ -97,7 +97,10 @@ public class ApplicationShell {
                     String inputLine = reader.readLine(currMode.promptSymbol().trim());
                     if (inputLine.isEmpty()) { continue; }
                     switch (inputLine) {
-                        case String s when s.startsWith("exit") -> onExit(reader, shellParams);
+                        case String s when s.startsWith("exit") -> {
+                            onExit(reader, shellParams);
+                            return;
+                        }
                         case String s when s.startsWith("clear") -> onClear(terminal);
                         case String s when s.startsWith("help") -> onHelp(output);
                         default -> {

@@ -1,12 +1,17 @@
 (load "scheme_files/table-config.scm")
 
 (define (load-shell-modes)
-  (let ((modes
+  (let* ((task-eval (TaskEval))
+         (modes
           (list
             (ShellMode[DirectoryEval] "DIRECTORY" (Set[JString]:of "dir") (DirectoryEval) "⛘|▹ " "⛘▹▹ ")
             (ShellMode[SchemeEval] "SCHEME" (Set[JString]:of "scheme") (SchemeEval SchemeInstance) "λ|▹ " "λ▹▹ ")
             (ShellMode[EventEval] "EVENT" (Set[JString]:of "event") (EventEval) "🗓|▹ " "🗓▹▹ ")
-            (ShellMode[TaskEval] "TASK" (Set[JString]:of "task") (TaskEval) "🗓|▹ " "🗓▹▹ ")
+            (ShellMode[TaskEval] "TASK" (Set[JString]:of "task") task-eval "🗓|▹ " "🗓▹▹ ")
+            (ShellMode[ProjectEval] "PROJECT" (Set[JString]:of "project") (ProjectEval task-eval) "⛘|▹ " "⛘▹▹ ")
+            (ShellMode[TextEval] "NOTE" (Set[JString]:of "note") (TextEval (EntryType:.NOTE)) "⛘|▹ " "⛘▹▹ ")
+            (ShellMode[TextEval] "JOUNRAL" (Set[JString]:of "journal") (TextEval (EntryType:.JOURNAL)) "⛘|▹ " "⛘▹▹ ")
+            (ShellMode[TodoEval] "TODO" (Set[JString]:of "todo") (TodoEval) "⛘|▹ " "⛘▹▹ ")
             )))
     (set-static Settings `SHELL_MODES modes)))
 
@@ -48,9 +53,15 @@
 (define (load-post-config)
   (begin
     (Settings:addEditor (JString "vs-code") (Editor (List[JString]:of "code" "-n")))
-
+    (Settings:addEditor (JString "idea") (Editor (List[JString]:of "idea")))
+    (set-static Settings `FULL_TEXT_EDITOR (JString "vs-code"))
     ))
+
+
 
 (load-shell-modes)
 (load-table-configs)
 (load-post-config)
+
+
+

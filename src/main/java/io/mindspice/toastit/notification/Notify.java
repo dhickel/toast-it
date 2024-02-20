@@ -1,8 +1,8 @@
 package io.mindspice.toastit.notification;
 
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.entries.event.EventEntry;
 
-import io.mindspice.toastit.entries.task.TaskEntry;
 import io.mindspice.toastit.enums.NotificationLevel;
 import io.mindspice.toastit.util.DateTimeUtil;
 import io.mindspice.toastit.util.Settings;
@@ -23,7 +23,7 @@ public class Notify {
         );
     }
 
-    public static ProcessBuilder newTaskNotify(Tag tag, TaskEntry task, NotificationLevel level) {
+    public static ProcessBuilder newDueByNotify(Tag tag, DatedEntry task, NotificationLevel level) {
         return new ProcessBuilder(
                 "notify-send",
                 tag.notifyTitle().isEmpty() ? task.name() : tag.notifyTitle(),

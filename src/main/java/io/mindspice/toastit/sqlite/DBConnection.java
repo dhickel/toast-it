@@ -145,8 +145,7 @@ public class DBConnection {
                         result.getString("reminders"),
                         result.getString("meta_path"),
                         result.getString("project_path"),
-                        result.getString("open_with"),
-                        result.getBoolean("has_note")
+                        result.getString("open_with")
                 );
                 projects.add(project);
             }
@@ -306,7 +305,7 @@ public class DBConnection {
     }
 
     public List<TaskEntry.Stub> getActiveTasks() throws IOException {
-        String query = "SELECT * FROM tasks WHERE started = true";
+        String query = "SELECT * FROM tasks WHERE started = true and archived = false";
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             return execMapTaskStubs(ps);
@@ -316,7 +315,7 @@ public class DBConnection {
     }
 
     public List<TaskEntry.Stub> getAllTasks() throws IOException {
-        String query = "SELECT * FROM tasks";
+        String query = "SELECT * FROM tasks where archived = false";
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             return execMapTaskStubs(ps);
@@ -325,14 +324,54 @@ public class DBConnection {
         }
     }
 
+    public List<ProjectEntry.Stub> getActiveProjects() throws IOException {
+        String query = "SELECT * FROM projects WHERE started = true and archived = false";
+
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            return execMapProjectStubs(ps);
+        } catch (SQLException e) {
+            throw new IOException("Error querying projects:" + e.getMessage());
+        }
+    }
+
+    public List<ProjectEntry.Stub> getAllProjects() throws IOException {
+        String query = "SELECT * FROM projects where archived = false";
+
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            return execMapProjectStubs(ps);
+        } catch (SQLException e) {
+            throw new IOException("Error querying projects:" + e.getMessage());
+        }
+    }
+
+    public List<TextEntry.Stub> getAllNotes() throws IOException {
+        String query = "SELECT * FROM notes where archived = false";
+
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            return execMapTextStubs(ps);
+        } catch (SQLException e) {
+            throw new IOException("Error querying notes:" + e.getMessage());
+        }
+    }
+
+    public List<TextEntry.Stub> getAllJournals() throws IOException {
+        String query = "SELECT * FROM journals where archived = false";
+
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            return execMapTextStubs(ps);
+        } catch (SQLException e) {
+            throw new IOException("Error querying journals:" + e.getMessage());
+        }
+    }
+
     ////////////
     // INSERT //
     ///////////
 
-    public void upsertEvent(EventEntry eventEntry, boolean isArchive) throws IOException {
+    public void upsertEvent(EventEntry eventEntry) throws IOException {
         EventEntry.Stub entry = eventEntry.getStub();
-        String query = String.format("""
-                INSERT INTO %s (uuid, name, tags, start_time, end_time, reminders, linked_uuid, completed)
+        String query = """
+                INSERT INTO events (uuid, name, tags, start_time, end_time, reminders, linked_uuid, completed)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
                    name = excluded.name,
@@ -342,7 +381,7 @@ public class DBConnection {
                    reminders = excluded.reminders,
                    linked_uuid = excluded.linked_uuid,
                    completed = excluded.completed;
-                """, isArchive ? "event_archive" : "events");
+                """;
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, entry.uuid());
@@ -360,10 +399,10 @@ public class DBConnection {
         }
     }
 
-    public void upsertTask(TaskEntry taskEntry, boolean isArchive) throws IOException {
+    public void upsertTask(TaskEntry taskEntry) throws IOException {
         TaskEntry.Stub entry = taskEntry.getStub();
-        String query = String.format("""
-                INSERT INTO %s (uuid, name, started, completed, tags, due_by,
+        String query = """
+                INSERT INTO tasks(uuid, name, started, completed, tags, due_by,
                     started_at, completed_at, reminders, meta_path)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
@@ -377,7 +416,7 @@ public class DBConnection {
                    completed_at = excluded.completed_at,
                    reminders = excluded.reminders,
                    meta_path = excluded.meta_path;
-                """, isArchive ? "task_archive" : "tasks");
+                """;
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, entry.uuid());
@@ -398,12 +437,12 @@ public class DBConnection {
         }
     }
 
-    public void upsertProject(ProjectEntry projectEntry, boolean isArchive) throws IOException {
+    public void upsertProject(ProjectEntry projectEntry) throws IOException {
         ProjectEntry.Stub entry = projectEntry.getStub();
-        String query = String.format("""
-                INSERT INTO %s (uuid, name, started, completed, tags, due_by, started_at, 
-                    completed_at, reminders, meta_path, project_path, open_with, has_note)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        String query = """
+                INSERT INTO projects (uuid, name, started, completed, tags, due_by, started_at, 
+                    completed_at, reminders, meta_path, project_path, open_with)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(uuid) DO UPDATE SET
                    name = excluded.name,
                    tags = excluded.tags,
@@ -416,9 +455,8 @@ public class DBConnection {
                    reminders = excluded.reminders,
                    meta_path = excluded.meta_path,
                    project_path = excluded.project_path,
-                   open_with = excluded.open_with,
-                   has_note = excluded.has_note;
-                """, isArchive ? "project_archive" : "projects");
+                   open_with = excluded.open_with
+                """;
 
         try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setString(1, entry.uuid());
@@ -433,11 +471,12 @@ public class DBConnection {
             ps.setString(10, entry.metaPath());
             ps.setString(11, entry.projectPath());
             ps.setString(12, entry.openWith());
-            ps.setBoolean(13, entry.hasNote());
 
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new IOException(String.format("SQL error returned for: %s Error: %s", entry.uuid(), e.getMessage()));
+            e.printStackTrace();
+            throw new IOException(String.format("SQL error returned for: %s Error: %s, Trace:",
+                    entry.uuid(), e.getMessage(), Arrays.toString(e.getStackTrace())));
         }
     }
 
@@ -472,6 +511,38 @@ public class DBConnection {
 
     public void upsertJournal(TextEntry entry) throws IOException {
         upsertTextEntry(entry, "journals");
+    }
+
+    private void setArchived(String uuid, String table, boolean isArchived) throws IOException {
+        String query = String.format("UPDATE %s SET archived = ? WHERE uuid = ?", table);
+
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setBoolean(1, isArchived);
+            ps.setString(2, uuid);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new IOException(String.format("SQL error returned for: %s Error: %s", uuid, e.getMessage()));
+        }
+    }
+
+    public void archiveEvent(UUID uuid, boolean isArchived) throws IOException {
+        setArchived(uuid.toString(), "events", isArchived);
+    }
+
+    public void archiveTask(UUID uuid, boolean isArchived) throws IOException {
+        setArchived(uuid.toString(), "tasks", isArchived);
+    }
+
+    public void archiveProject(UUID uuid, boolean isArchived) throws IOException {
+        setArchived(uuid.toString(), "project", isArchived);
+    }
+
+    public void archiveNote(UUID uuid, boolean isArchived) throws IOException {
+        setArchived(uuid.toString(), "notes", isArchived);
+    }
+
+    public void archiveJournal(UUID uuid, boolean isArchived) throws IOException {
+        setArchived(uuid.toString(), "journals", isArchived);
     }
 
     ////////////
