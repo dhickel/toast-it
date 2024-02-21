@@ -1,6 +1,5 @@
 package io.mindspice.toastit.entries.event;
 
-import io.mindspice.mindlib.data.tuples.Triple;
 import io.mindspice.toastit.App;
 import io.mindspice.mindlib.data.tuples.Pair;
 import io.mindspice.toastit.entries.CalendarEvents;
