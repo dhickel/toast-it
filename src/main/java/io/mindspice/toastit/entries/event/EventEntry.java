@@ -77,7 +77,7 @@ public record EventEntry(
 
     @Override
     public LocalDateTime dueBy() {
-        return endTime;
+        return startTime;
     }
 
     @Override

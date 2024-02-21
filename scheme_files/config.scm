@@ -32,12 +32,42 @@
     (set-static Settings ' TABLE_OVERFLOW_BEHAVIOR (OverflowBehaviour:.ELLIPSIS_LEFT))
     ))
 
+
+(define (calendar-full-data-mapper)
+  (KFunction[DatedEntry JString]
+    (lambda (entry ::DatedEntry)
+      (JString:format (JString "%s %s - %s")
+        (if ((entry:tags):isEmpty)
+          (JString "")
+          ((Settings:getTag ((entry:tags):getFirst)):asciiIcon))
+        (((entry:dueBy):toLocalTime):truncatedTo (ChronoUnit:.MINUTES))
+        (entry:name)))))
+
+(define (calendar-small-data-mapper)
+  (KFunction[DatedEntry JString]
+    (lambda (entry ::DatedEntry)
+      (if ((entry:tags):isEmpty)
+        (JString "**")
+        ((Settings:getTag ((entry:tags):getFirst)):asciiIcon))
+      )))
+
+(define (calendar-cell-mapper data-mapper)
+  (KUnaryOperator[CalendarCell]
+    (lambda (cell ::CalendarCell)
+      (let* ((rtn-cell ::CalendarCell cell))
+        (if (((LocalDate:now):atStartOfDay):isEqual ((cell:date):atStartOfDay))
+          (set! rtn-cell (cell:asHighlighted)))
+        (rtn-cell:withItems ((App:instance):getCalendarEvents (cell:date) data-mapper))))))
+
+
+
 (define (load-calendar-settings)
   (begin
-    (set-static Settings 'CALENDAR_HEADER_LEADING_SPACES 8)
-    (set-static Settings `CALENDER_HEADER_HEIGHT 3)
-    (set-static Settings `CALENDER_CELL_HEIGHT 12)
-    (set-static Settings `CALENDER_CELL_WIDTH 28)
+    (set-static Settings `CALENDAR_CELL_HEIGHT 13)
+    (set-static Settings `CALENDAR_CELL_WIDTH 34)
+    (set-static Settings `CALENDAR_REFRESH_SEC (* 60 30))
+    (set-static Settings `CALENDAR_DATA_MAPPER (calendar-full-data-mapper))
+    (set-static Settings `CALENDAR_CELL_MAPPER (calendar-cell-mapper (calendar-full-data-mapper)))
     ))
 
 (define (load-shell-settings)
@@ -62,7 +92,6 @@
     (set-static Settings `TASK_NOTIFY_FADE_TIME_SEC (* 60 60))
     (set-static Settings `MAX_PREVIEW_LENGTH 1000)
     ))
-
 
 
 

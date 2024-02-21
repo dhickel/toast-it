@@ -3,6 +3,8 @@ package io.mindspice.toastit.entries.event;
 import io.mindspice.mindlib.data.tuples.Triple;
 import io.mindspice.toastit.App;
 import io.mindspice.mindlib.data.tuples.Pair;
+import io.mindspice.toastit.entries.CalendarEvents;
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.entries.task.TaskEntry;
 import io.mindspice.toastit.notification.Notify;
 import io.mindspice.toastit.notification.Reminder;
@@ -13,15 +15,18 @@ import io.mindspice.toastit.util.Tag;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
-public class EventManager {
+public class EventManager implements CalendarEvents {
     public List<ScheduledNotification> scheduledNotifications = new CopyOnWriteArrayList<>();
     public final List<EventEntry> pastEvents = new CopyOnWriteArrayList<>();
     public final List<EventEntry> futureEvents = new CopyOnWriteArrayList<>();
@@ -118,8 +123,8 @@ public class EventManager {
 
     public Function<EventEntry, List<ScheduledNotification>> createEventReminders = (EventEntry event) -> {
         Tag tag = event.tags().isEmpty()
-                ? Tag.Default()
-                : Settings.TAG_MAP.getOrDefault(event.tags().getFirst(), Tag.Default());
+                  ? Tag.Default()
+                  : Settings.TAG_MAP.getOrDefault(event.tags().getFirst(), Tag.Default());
 
         List<ScheduledNotification> newNotifications = new ArrayList<>(4);
         event.reminders().forEach(reminder -> {
@@ -149,8 +154,8 @@ public class EventManager {
         try {
 
             long lookFoward = Settings.EVENT_LOOK_FORWARD_DAYS == -1
-                    ? -1
-                    : DateTimeUtil.localToUnix(LocalDateTime.now().plusDays(Settings.EVENT_LOOK_FORWARD_DAYS));
+                              ? -1
+                              : DateTimeUtil.localToUnix(LocalDateTime.now().plusDays(Settings.EVENT_LOOK_FORWARD_DAYS));
 
             List<EventEntry> events = App.instance().getDatabase().getEvents(lookFoward);
 
@@ -176,6 +181,20 @@ public class EventManager {
             System.err.println("Failed to refresh events: " + e.getMessage());
         }
     };
+
+    @Override
+    public List<String> getCalendarEvents(LocalDate date, Function<DatedEntry, String> mapper) {
+        try {
+            return App.instance().getDatabase().getEvents(DateTimeUtil.localToUnix(LocalDateTime.now().plusDays(30)))
+                    .stream()
+                    .filter(e -> e.startTime().toLocalDate().isEqual(date))
+                    .map(mapper)
+                    .toList();
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            return List.of();
+        }
+    }
 }
 
 

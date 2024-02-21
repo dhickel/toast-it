@@ -1,6 +1,8 @@
 package io.mindspice.toastit.entries.project;
 
 import io.mindspice.toastit.App;
+import io.mindspice.toastit.entries.CalendarEvents;
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.notification.Notify;
 import io.mindspice.toastit.notification.ScheduledNotification;
 import io.mindspice.toastit.util.DateTimeUtil;
@@ -10,6 +12,8 @@ import io.mindspice.toastit.util.Tag;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
@@ -18,7 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 
-public class ProjectManager {
+public class ProjectManager implements CalendarEvents {
 
     public final List<ScheduledNotification> scheduledNotifications = new CopyOnWriteArrayList<>();
     public final List<ProjectEntry> activeProjects = new CopyOnWriteArrayList<>();
@@ -49,7 +53,6 @@ public class ProjectManager {
         }
         return tasks.stream().sorted(Comparator.comparing(ProjectEntry::dueBy)).toList();
     }
-    
 
     public void addProject(ProjectEntry project) throws IOException {
         App.instance().getDatabase().upsertProject(project);
@@ -148,4 +151,12 @@ public class ProjectManager {
                     e.getMessage(), Arrays.toString(e.getStackTrace()));
         }
     };
+
+    @Override
+    public List<String> getCalendarEvents(LocalDate date, Function<DatedEntry, String> dataMapper) {
+        return activeProjects.stream()
+                .filter(e -> e.dueBy().isEqual(date.atStartOfDay()))
+                .map(dataMapper)
+                .toList();
+    }
 }

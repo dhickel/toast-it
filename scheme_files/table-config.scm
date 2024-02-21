@@ -502,7 +502,7 @@
       (JString "Todo")
       (KFunction[Pair[Integer String] JString]
         (lambda (entry ::Pair[Integer String]) (JString (entry:second))))
-      50 200)
+      50 50)
     ))
 
 (define (general-table-configs)
@@ -513,6 +513,122 @@
     (set-static TableConfig `SEARCH_VIEW_TABLE search-view-table)
     (set-static TableConfig `TODO_VIEW_TABLE todo-view-table)
     ))
+
+
+;; DASHBOARD
+
+
+(define dash-todo-table
+  (List:of
+    (TableUtil:createColumn
+      (JString "Todo")
+      (KFunction[JString JString]
+        (lambda (entry ::JString) (JString entry)))
+      34 34)
+    ))
+
+(define dash-event-table
+  (List:of
+    (TableUtil:createColumn
+      (JString "Event Name")
+      (KFunction[EventEntry JString]
+        (lambda (entry ::EventEntry) (JString (entry:name))))
+      25 25)
+    (TableUtil:createColumn
+      (JString "Tags")
+      (KFunction[EventEntry JString]
+        (lambda (entry ::EventEntry) (JString (entry:tags))))
+      25 25)
+    (TableUtil:createColumn
+      (JString "Start Time")
+      (KFunction[EventEntry JString]
+        (lambda (entry ::EventEntry) (JString (DateTimeUtil:printDateTimeFull (entry:startTime)))))
+      34 34)
+    ))
+
+(define dash-calendar
+  (let* ((date (LocalDate:now)))
+    (Calendar:generateCalendar
+      (date:getYear)
+      (date:getMonth)
+      15
+      6
+      (calendar-cell-mapper (calendar-small-data-mapper)))))
+
+
+(define dash-project-table
+  (List:of
+    (TableUtil:createColumn
+      (JString "Project Name")
+      (KFunction[ProjectEntry JString]
+        (lambda (entry ::ProjectEntry) (JString (entry:name))))
+      30 30)
+    (TableUtil:createColumn
+      (JString "Tags")
+      (KFunction[ProjectEntry JString]
+        (lambda (entry ::ProjectEntry) (JString (entry:tags))))
+      30 30)
+    (TableUtil:createColumn
+      (JString "Due By")
+      (KFunction[ProjectEntry JString]
+        (lambda (entry ::ProjectEntry) (JString (DateTimeUtil:printDateTimeFull (entry:dueBy)))))
+      34 34)
+    (TableUtil:createColumn
+      (JString "Overdue")
+      (KFunction[ProjectEntry JString]
+        (lambda (entry ::ProjectEntry) (JString ((entry:dueBy):isBefore (LocalDateTime:now)))))
+      10 10)
+    (TableUtil:createColumn
+      (JString "Completion")
+      (KFunction[ProjectEntry JString]
+        (lambda (entry ::ProjectEntry) (JString (entry:completionPct))))
+      15 15)
+    ))
+
+(define dash-task-table
+  (List:of
+    (TableUtil:createColumn
+      (JString "Task Name")
+      (KFunction[TaskEntry JString]
+        (lambda (entry ::TaskEntry) (JString (entry:name))))
+      30 30)
+    (TableUtil:createColumn
+      (JString "Tags")
+      (KFunction[TaskEntry JString]
+        (lambda (entry ::TaskEntry) (JString (entry:tags))))
+      30 30)
+    (TableUtil:createColumn
+      (JString "Due By")
+      (KFunction[TaskEntry JString]
+        (lambda (entry ::TaskEntry) (JString (DateTimeUtil:printDateTimeFull (entry:dueBy)))))
+      34 34)
+    (TableUtil:createColumn
+      (JString "Overdue")
+      (KFunction[TaskEntry JString]
+        (lambda (entry ::TaskEntry) (JString ((entry:dueBy):isBefore (LocalDateTime:now)))))
+      10 10)
+    (TableUtil:createColumn
+      (JString "Completion")
+      (KFunction[TaskEntry JString]
+        (lambda (entry ::TaskEntry) (JString (entry:completionPct))))
+      15 15)
+    ))
+
+;; Instead of setting this on a setting it is passed directly to the evaluators constructor in post-init
+(define dash-view-supplier
+  (KSupplier[JString]
+    (lambda ()
+      (let* ((todo-table (TableUtil:generateTable
+                           (((App:instance):getTodoManager):getAllItems) dash-todo-table))
+              (event-table (TableUtil:generateTableWithHeader
+                            "Upcoming Events" (((App:instance):getEventManager):getFutureEvents) dash-event-table))
+              (project-table (TableUtil:generateTableWithHeader
+                                   "Active Projects" (((App:instance):getProjectManager):getActiveProjects) dash-project-table))
+              (task-table (TableUtil:generateTableWithHeader
+                                    "Active Tasks" (((App:instance):getTaskManager):getActiveTasks) dash-task-table))
+              (row1 (TableUtil:mergeAndPadTable 1 todo-table event-table dash-calendar))
+              (row2 (TableUtil:mergeAndPadTable 1 project-table task-table)))
+        (JString (string-append row1 "\n" row2))))))
 
 
 (define (load-table-configs)

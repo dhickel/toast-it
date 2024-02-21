@@ -2,6 +2,9 @@ package io.mindspice.toastit.util;
 
 import com.github.freva.asciitable.HorizontalAlign;
 import com.github.freva.asciitable.OverflowBehaviour;
+import io.mindspice.toastit.calendar.Calendar;
+import io.mindspice.toastit.calendar.CalendarCell;
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.shell.ShellMode;
 
 import java.nio.file.Path;
@@ -9,6 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 
 public class Settings {
@@ -82,15 +87,18 @@ public class Settings {
     public static List<ShellMode<?>> SHELL_MODES;
 
     // Calendar
-    public static int CALENDAR_HEADER_LEADING_SPACES;
-    public static int CALENDER_HEADER_HEIGHT;
-    public static int CALENDER_CELL_HEIGHT;
-    public static int CALENDER_CELL_WIDTH;
+    public static int CALENDAR_CELL_HEIGHT;
+    public static int CALENDAR_CELL_WIDTH;
+    public static int CALENDAR_REFRESH_SEC;
+    public static UnaryOperator<CalendarCell> CALENDAR_CELL_MAPPER;
+    public static Function<DatedEntry, String> CALENDAR_DATA_MAPPER;
 
     // Global Table Settings
     public static int TABLE_MAX_COLUMN_WIDTH;
     public static HorizontalAlign TABLE_DEFAULT_ALIGNMENT;
     public static OverflowBehaviour TABLE_OVERFLOW_BEHAVIOR;
+
+
 
 
 }

@@ -17,7 +17,7 @@ public class Notify {
                 event.name() + " | " + String.format("%s - %s",
                         DateTimeUtil.printDateTimeShort(event.startTime()),
                         DateTimeUtil.printDateTimeShort(event.endTime())),
-                "-i", tag.icon(),
+               // "-i", tag.icon(),
                 "-u", level.name(),
                 "-t", String.valueOf(1000 * Settings.EVENT_NOTIFY_FADE_TIME_SEC)
         );
@@ -28,7 +28,7 @@ public class Notify {
                 "notify-send",
                 tag.notifyTitle().isEmpty() ? task.name() : tag.notifyTitle(),
                 task.name() + " | " + "Due By: " + DateTimeUtil.printDateTimeShort(task.dueBy()),
-                "-i", tag.icon(),
+               // "-i", tag.icon(),
                 "-u", level.name(),
                 "-t", String.valueOf(1000 * Settings.TASK_NOTIFY_FADE_TIME_SEC)
         );

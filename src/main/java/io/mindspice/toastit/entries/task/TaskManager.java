@@ -1,6 +1,8 @@
 package io.mindspice.toastit.entries.task;
 
 import io.mindspice.toastit.App;
+import io.mindspice.toastit.entries.CalendarEvents;
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.notification.Notify;
 import io.mindspice.toastit.notification.ScheduledNotification;
 import io.mindspice.toastit.util.DateTimeUtil;
@@ -10,15 +12,18 @@ import io.mindspice.toastit.util.Tag;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 
-public class TaskManager {
+public class TaskManager implements CalendarEvents {
     public final List<ScheduledNotification> scheduledNotifications = new CopyOnWriteArrayList<>();
     public final List<TaskEntry> activeTasks = new CopyOnWriteArrayList<>();
     public final ScheduledExecutorService exec = App.instance().getExec();
@@ -146,4 +151,13 @@ public class TaskManager {
                     e.getMessage(), Arrays.toString(e.getStackTrace()));
         }
     };
+
+
+    @Override
+    public List<String> getCalendarEvents(LocalDate date, Function<DatedEntry, String> dataMapper) {
+        return activeTasks.stream()
+                .filter(e -> e.dueBy().isEqual(date.atStartOfDay()))
+                .map(dataMapper)
+                .toList();
+    }
 }

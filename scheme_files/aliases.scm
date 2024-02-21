@@ -2,6 +2,7 @@
 (define-alias KConsumer io.mindspice.kawautils.wrappers.functional.consumers.KawaConsumer)
 (define-alias KBiConsumer io.mindspice.kawautils.wrappers.functional.consumers.KawaBiConsumer)
 (define-alias KFunction io.mindspice.kawautils.wrappers.functional.functions.KawaFunction)
+(define-alias KUnaryOperator io.mindspice.kawautils.wrappers.functional.functions.KawaUnaryOperator)
 (define-alias KBiFunction io.mindspice.kawautils.wrappers.functional.functions.KawaBiFunction)
 (define-alias KPredicate io.mindspice.kawautils.wrappers.functional.predicates.KawaPredicate)
 (define-alias KBiPredicate io.mindspice.kawautils.wrappers.functional.predicates.KawaBiPredicate)
@@ -21,14 +22,18 @@
 (define-alias JString java.lang.String)
 (define-alias Instance java.time.Instant)
 (define-alias LocalDateTime java.time.LocalDateTime)
+(define-alias LocalDate java.time.LocalDate)
+(define-alias ChronoUnit java.time.temporal.ChronoUnit)
 (define-alias Integer java.lang.Integer)
 (define-alias IntStream java.util.stream.IntStream)
 (define-alias Duration java.time.Duration)
 (define-alias Runnable java.lang.Runnable)
 (define-alias Path java.nio.file.Path)
 (define-alias Consumer java.util.function.Consumer)
+(define-alias Supplier java.util.function.Supplier)
 (define-alias Predicate java.util.function.Predicate)
 (define-alias IntConsumer java.util.function.IntConsumer)
+(define-alias UnaryOperator java.util.function.UnaryOperator)
 
 ;; Custom Types
 (define-alias Pair io.mindspice.mindlib.data.tuples.Pair)
@@ -38,6 +43,7 @@
 (define-alias Calendar io.mindspice.toastit.calendar.Calendar)
 (define-alias CalendarCell io.mindspice.toastit.calendar.CalendarCell)
 (define-alias Entry io.mindspice.toastit.entries.Entry)
+(define-alias DatedEntry io.mindspice.toastit.entries.DatedEntry)
 (define-alias TaskEntry io.mindspice.toastit.entries.task.TaskEntry)
 (define-alias SubTask io.mindspice.toastit.entries.task.SubTask)
 (define-alias TextEntry io.mindspice.toastit.entries.text.TextEntry)
@@ -48,6 +54,10 @@
 (define-alias Reminder io.mindspice.toastit.notification.Reminder)
 (define-alias Editor io.mindspice.toastit.util.Editor)
 (define-alias SearchResult io.mindspice.toastit.entries.SearchResult)
+(define-alias CalendarEvents io.mindspice.toastit.entries.CalendarEvents)
+(define-alias App io.mindspice.toastit.App)
+(define-alias Settings io.mindspice.toastit.util.Settings)
+
 
 ;; Application Shell Evaluators
 (define-alias ShellEvaluator io.mindspice.toastit.shell.evaluators.ShellEvaluator)
@@ -58,6 +68,8 @@
 (define-alias ProjectEval io.mindspice.toastit.shell.evaluators.ProjectEval)
 (define-alias TextEval io.mindspice.toastit.shell.evaluators.TextEval)
 (define-alias TodoEval io.mindspice.toastit.shell.evaluators.TodoEval)
+(define-alias CalendarEval io.mindspice.toastit.shell.evaluators.CalendarEval)
+(define-alias DisplayEval io.mindspice.toastit.shell.evaluators.DisplayEval)
 
 ;; Application Enums
 (define-alias EntryType io.mindspice.toastit.enums.EntryType)

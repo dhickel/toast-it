@@ -44,9 +44,11 @@ public class TableUtil {
     }
 
     public static String basicColumn(String header, String data) {
-        ColumnData<String> column = createColumn("Header", Object::toString);
+        ColumnData<String> column = createColumn(header, Object::toString);
         return generateTable(List.of(data), List.of(column));
     }
+
+
 
     public static String basicRow(int offset, String... items) {
         StringBuilder top = new StringBuilder(" ".repeat(offset) + "+");
@@ -161,6 +163,29 @@ public class TableUtil {
     }
 
     public static String mergeAndPadRowList(List<List<String>> lists, String horizontalPad) {
+//        // Calculate the maximum length of strings in each column across all lists
+//        int maxColumns = lists.stream().mapToInt(List::size).max().orElse(0);
+//        int[] maxColumnLengths = new int[maxColumns];
+//        for (List<String> list : lists) {
+//            System.out.println(list);
+//            for (int i = 0; i < list.size(); i++) {
+//                maxColumnLengths[i] = Math.max(maxColumnLengths[i], list.get(i).length());
+//            }
+//        }
+//        // Pad elements within each row according to the maximum lengths and adjust row lengths
+//        List<List<String>> paddedLists = lists.stream().map(list -> IntStream.range(0, maxColumns)
+//                .mapToObj(i -> (i < list.size())
+//                               ? String.format("%-" + maxColumnLengths[i] + "s", list.get(i))
+//                               : " ".repeat(maxColumnLengths[i])).collect(Collectors.toList())
+//        ).toList();
+//
+//        // Add padding between tables
+//        return IntStream.range(0, maxColumns)
+//                .mapToObj(columnIndex -> paddedLists.stream()
+//                        .map(list -> list.get(columnIndex))
+//                        .collect(Collectors.joining(horizontalPad)))
+//                .collect(Collectors.joining("\n"));
+
         // Determine maximum size among all lists
         int maxSize = lists.stream().mapToInt(List::size).max().orElse(0);
 
@@ -168,16 +193,17 @@ public class TableUtil {
         lists.forEach(list -> {
             int initialSize = list.size();
             for (int i = initialSize; i < maxSize; i++) {
-                list.add(" ".repeat(initialSize > 0 ? list.getFirst().length() : 0));
+                list.add(" ".repeat(initialSize > 0 ? list.get(0).length() : 0));
             }
         });
 
-        // Concatenate and add horizontal padding
+        // Concatenate elements from each list with horizontal padding
         return IntStream.range(0, maxSize)
                 .mapToObj(rowIndex -> lists.stream()
                         .map(list -> list.get(rowIndex))
                         .collect(Collectors.joining(horizontalPad)))
                 .collect(Collectors.joining("\n"));
+
     }
 
     public static String wrapString(String input, int maxLength) {

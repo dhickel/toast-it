@@ -62,8 +62,8 @@ public class TextEval extends ShellEvaluator<TextEval> {
         String table = TableUtil.generateTableWithHeader("Active " + tStr, manager.getEntries(), viewColumns);
         String cmds = String.join("\n", "\nAvailable Actions:",
                 (type == EntryType.JOURNAL
-                 ? TableUtil.basicRow(2, "new", "manage", "open <name>", "view <name>")
-                 : TableUtil.basicRow(2, "new", "manage", "open <name>", "view <name>, daily"))
+                 ? TableUtil.basicRow(2, "new", "manage", "open <name>", "view <name>", "daily")
+                 : TableUtil.basicRow(2, "new", "manage", "open <name>", "view <name>"))
         );
 
         return String.join("\n", table, cmds) + "\n";

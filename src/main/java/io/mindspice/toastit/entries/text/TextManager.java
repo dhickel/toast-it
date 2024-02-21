@@ -71,7 +71,7 @@ public class TextManager {
             builder.name = "Daily Journal | " + DateTimeUtil.printDateTimeFull(LocalDateTime.now());
             builder.tags = List.of("daily");
             dailyJournal = builder.build();
-            entries.add(dailyJournal);
+            addJournal(dailyJournal);
         }
         return dailyJournal;
     }

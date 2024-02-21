@@ -6,18 +6,19 @@ import io.mindspice.toastit.enums.NotificationLevel;
 public record Tag(
         String tagName,
         String notifyTitle,
-        String icon
+        String notifyIcon,
+        String asciiIcon
 ) {
 
     public static Tag of(String tagName) {
-        return new Tag(tagName, tagName, "dialog-information");
+        return new Tag(tagName, tagName,"dialog-information", "");
     }
 
     public static Tag of(String tagName, String notifyTitle) {
-        return new Tag(tagName, notifyTitle, "dialog-information");
+        return new Tag(tagName, notifyTitle, "dialog-information", "");
     }
 
     public static Tag Default() {
-        return new Tag("", "", "dialog-information");
+        return new Tag("", "", "dialog-information", "");
     }
 }

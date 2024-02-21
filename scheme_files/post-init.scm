@@ -1,4 +1,5 @@
 (load "scheme_files/table-config.scm")
+(load "scheme_files/custom-eval.scm")
 
 (define (load-shell-modes)
   (let* ((task-eval (TaskEval))
@@ -12,6 +13,8 @@
             (ShellMode[TextEval] "NOTE" (Set[JString]:of "note") (TextEval (EntryType:.NOTE)) "⛘|▹ " "⛘▹▹ ")
             (ShellMode[TextEval] "JOUNRAL" (Set[JString]:of "journal") (TextEval (EntryType:.JOURNAL)) "⛘|▹ " "⛘▹▹ ")
             (ShellMode[TodoEval] "TODO" (Set[JString]:of "todo") (TodoEval) "⛘|▹ " "⛘▹▹ ")
+            (ShellMode[CalendarEval] "CALENDAR" (Set[JString]:of "calend") (CalendarEval) "⛘|▹ " "⛘▹▹ ")
+            (ShellMode[DisplayEval] "DASHBOARD" (Set[JString]:of "dash") (DisplayEval dash-view-supplier) "⛘|▹ " "⛘▹▹ ")
             )))
     (set-static Settings `SHELL_MODES modes)))
 

@@ -1,5 +1,7 @@
 package io.mindspice.toastit;
 
+import io.mindspice.toastit.entries.CalendarEvents;
+import io.mindspice.toastit.entries.DatedEntry;
 import io.mindspice.toastit.entries.TodoManager;
 import io.mindspice.toastit.entries.project.ProjectManager;
 import io.mindspice.toastit.entries.task.TaskManager;
@@ -13,12 +15,17 @@ import io.mindspice.toastit.util.Settings;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 
-public class App {
+public class App implements CalendarEvents {
 
     private static final App INSTANCE;
     private KawaInstance scheme;
@@ -33,6 +40,14 @@ public class App {
     private TextManager noteManager;
     private TextManager journalManager;
     private TodoManager todoManager;
+
+    public BiFunction<LocalDate, Function<DatedEntry, String>, List<String>> calendarEventProvider = (date, func) -> {
+        var eventList = new ArrayList<String>();
+        eventList.addAll(eventManager.getCalendarEvents(date, func));
+        eventList.addAll(projectManager.getCalendarEvents(date, func));
+        eventList.addAll(taskManager.getCalendarEvents(date, func));
+        return eventList;
+    };
 
     static {
         try {
@@ -64,6 +79,7 @@ public class App {
     public App init() throws IOException {
 
         scheme.defineObject("AppInstance", this);
+
         exec = Executors.newScheduledThreadPool(Settings.EXEC_THREADS);
         eventManager = new EventManager();
         taskManager = new TaskManager();
@@ -121,5 +137,11 @@ public class App {
 
     public TodoManager getTodoManager() {
         return todoManager;
+    }
+
+
+    @Override
+    public List<String> getCalendarEvents(LocalDate date, Function<DatedEntry, String> dataMapper) {
+        return calendarEventProvider.apply(date, dataMapper);
     }
 }
