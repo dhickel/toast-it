@@ -309,7 +309,13 @@ public class ProjectEval extends ShellEvaluator<ProjectEval> {
     }
 
     public String manageProjects(String input) {
-        InputPrompt<ProjectEntry> prompt = new InputPrompt<>(projectManager.getActiveProjects());
+        InputPrompt<ProjectEntry> prompt;
+        try {
+            prompt = new InputPrompt<>(projectManager.getAllProjects());
+        } catch (IOException e) {
+            System.err.println(e.getMessage() + " | " + Arrays.toString(e.getStackTrace()));
+            return "Error loading Projects: " + e.getMessage();
+        }
 
         String cmds = String.join("\n", "\nAvailable Actions:",
                 TableUtil.basicRow(2, "new", "open <index/name>", "view <index/name>", "update <index/name>", "complete <index/name>", "delete <index/name>"),

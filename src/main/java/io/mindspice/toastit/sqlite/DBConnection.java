@@ -22,8 +22,11 @@ public class DBConnection {
     private final String url;
     private final Connection connection;
 
-    public DBConnection() {
+    public DBConnection() throws IOException {
         boolean exists = Files.exists(Path.of(Settings.DATABASE_PATH));
+        if (!exists) {
+            Files.createDirectories(Path.of(Settings.DATABASE_PATH).getParent());
+        };
         url = "jdbc:sqlite:" + Settings.DATABASE_PATH;
         try {
             Connection conn = DriverManager.getConnection(url);

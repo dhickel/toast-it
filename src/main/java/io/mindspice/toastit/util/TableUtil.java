@@ -1,6 +1,7 @@
 package io.mindspice.toastit.util;
 
 import com.github.freva.asciitable.*;
+import gnu.lists.IString;
 import io.mindspice.mindlib.data.tuples.Pair;
 
 import java.nio.file.Path;
@@ -96,6 +97,7 @@ public class TableUtil {
                         Arrays.stream(splitTable).skip(1).collect(Collectors.joining("\n")) + "\n"
                 );
             }
+
         } else {
             return String.join("\n", top, mid, String.join("\n", splitTable)) + "\n";
         }
@@ -119,8 +121,7 @@ public class TableUtil {
         List<ColumnData<Pair<String, String>>> columns = TableUtil.createKeyPairColumns("", "");
         return generateTableWithHeader(
                 header,
-                IntStream.range(0, items.size())
-                        .mapToObj(i -> Pair.of(keyFunc.apply(items.get(i)) + i, valFunc.apply(items.get(i))))
+                items.stream().map(item -> Pair.of(keyFunc.apply(item), valFunc.apply(item)))
                         .toList(),
                 columns);
     }

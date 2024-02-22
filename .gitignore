@@ -1,5 +1,5 @@
 target/
-DATA/
+DATA_B/
 user_libraries/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

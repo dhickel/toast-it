@@ -67,7 +67,6 @@ public class TaskEval extends ShellEvaluator<TaskEval> {
         }
     }
 
-    
     public String crateNewTask(String input) {
         try {
             taskCreator();
@@ -223,7 +222,14 @@ public class TaskEval extends ShellEvaluator<TaskEval> {
     }
 
     public String manageTasks(String input) {
-        InputPrompt<TaskEntry> prompt = new InputPrompt<>(taskManager.getActiveTasks());
+        InputPrompt<TaskEntry> prompt;
+        try {
+            prompt = new InputPrompt<>(taskManager.getAllTasks());
+        } catch (IOException e) {
+            System.err.println(e.getMessage() + " | " + Arrays.toString(e.getStackTrace()));
+            return "Error loading Tasks: " + e.getMessage();
+
+        }
 
         String cmds = String.join("\n", "\nAvailable Actions:",
                 TableUtil.basicRow(2, "new", "view <index/name>", "update <index/name>", "complete <index/name>", "delete <index/name>"),
