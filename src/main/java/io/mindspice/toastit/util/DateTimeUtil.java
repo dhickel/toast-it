@@ -1,5 +1,6 @@
 package io.mindspice.toastit.util;
 
+import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -15,8 +16,9 @@ public class DateTimeUtil {
     public static List<DateTimeFormatter> dateInputFormatters;
     public static DateTimeFormatter dateTimeFullFormatter;
     public static DateTimeFormatter dateTimeShortFormatter;
+    public static DateTimeFormatter dateWithoutTimeFormatter = DateTimeFormatter.ofPattern("EEEE, MMM dd, yyyy");
 
-    public static LocalDateTime MAX = LocalDateTime.of(9999,Month.DECEMBER, 31,0,0,0).truncatedTo(ChronoUnit.MINUTES);
+    public static LocalDateTime MAX = LocalDateTime.of(9999, Month.DECEMBER, 31, 0, 0, 0).truncatedTo(ChronoUnit.MINUTES);
 
 
     static {
@@ -64,6 +66,9 @@ public class DateTimeUtil {
         return dateTimeFullFormatter.format(dateTime);
     }
 
+    public static String printDateWithoutTime(LocalDateTime dateTime) {
+        return dateWithoutTimeFormatter.format(dateTime);
+    }
 
     public static LocalDateTime unixToLocal(long unixTime) {
         Instant inst = Instant.ofEpochSecond(unixTime);

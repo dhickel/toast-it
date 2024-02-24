@@ -111,13 +111,12 @@ public class ProjectManager implements CalendarEvents {
             );
 
             Runnable notifyProject = () -> {
-                //FIXME
-//                try {
-//                    notification.start();
-//                    scheduledNotifications.removeIf(sn -> sn.uuid().equals(project.uuid()) && sn.time().equals(reminder.time()));
-//                } catch (IOException e) {
-//                    System.err.printf("Error emitting notification for: %s, Error: %s%n", project, e);
-//                }
+                try {
+                    notification.start();
+                    scheduledNotifications.removeIf(sn -> sn.uuid().equals(project.uuid()) && sn.time().equals(reminder.time()));
+                } catch (IOException e) {
+                    System.err.printf("Error emitting notification for: %s, Error: %s%n", project, e);
+                }
             };
             var sf = exec.schedule(notifyProject, DateTimeUtil.delayToDateTime(reminder.time()), TimeUnit.SECONDS);
             newNotifications.add(new ScheduledNotification(project.uuid(), reminder.time(), sf));

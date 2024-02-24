@@ -68,7 +68,7 @@ public class TextManager {
                 .isBefore(LocalDateTime.now().truncatedTo(ChronoUnit.DAYS))) {
             var builder = TextEntry.builder(EntryType.JOURNAL);
             builder.createdAt = LocalDateTime.now();
-            builder.name = "Daily Journal | " + DateTimeUtil.printDateTimeFull(LocalDateTime.now());
+            builder.name = "Daily Journal | " + DateTimeUtil.printDateWithoutTime(LocalDateTime.now());
             builder.tags = List.of("daily");
             dailyJournal = builder.build();
             addJournal(dailyJournal);

@@ -70,6 +70,8 @@
 (define-alias TodoEval io.mindspice.toastit.shell.evaluators.TodoEval)
 (define-alias CalendarEval io.mindspice.toastit.shell.evaluators.CalendarEval)
 (define-alias DisplayEval io.mindspice.toastit.shell.evaluators.DisplayEval)
+(define-alias CustomEval io.mindspice.toastit.shell.evaluators.CustomEval)
+(define-alias BiCustomEval io.mindspice.toastit.shell.evaluators.BiCustomEval)
 
 ;; Application Enums
 (define-alias EntryType io.mindspice.toastit.enums.EntryType)

@@ -147,7 +147,7 @@ public class TextEval extends ShellEvaluator<TextEval> {
 
         String cmds = String.join("\n", "\nAvailable Actions:",
                 TableUtil.basicRow(2, "new", "open <index/name>", "view <index/name>", "update <index/name>", "delete <index/name>"),
-                TableUtil.basicRow(2, "filter<all>", "filter <tag>", "filter <name>", "filter created"),
+                TableUtil.basicRow(2, "filter all", "filter tag <tag>", "filter name <name>", "filter created"),
                 TableUtil.basicRow(2, "search <String>", "archive <index/name>", "done"));
 
         String output = "";

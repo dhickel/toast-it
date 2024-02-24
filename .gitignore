@@ -1,6 +1,7 @@
 target/
 DATA_B/
 DATA/
+toast-it/
 user_libraries/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

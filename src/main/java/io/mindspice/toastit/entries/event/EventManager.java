@@ -132,13 +132,12 @@ public class EventManager implements CalendarEvents {
 
                 ProcessBuilder notification = Notify.newEventNotify(tag, event, reminder.level());
                 Runnable notifyTask = () -> {
-                    //FIXME
-//                    try {
-//                        notification.start();
-//                        scheduledNotifications.removeIf(sn -> sn.uuid().equals(event.uuid()) && sn.time().equals(reminder.time()));
-//                    } catch (IOException e) {
-//                        System.err.printf("Error emitting notification for: %s, Error: %s%n", event, e);
-//                    }
+                    try {
+                        notification.start();
+                        scheduledNotifications.removeIf(sn -> sn.uuid().equals(event.uuid()) && sn.time().equals(reminder.time()));
+                    } catch (IOException e) {
+                        System.err.printf("Error emitting notification for: %s, Error: %s%n", event, e);
+                    }
                 };
 
                 var sf = exec.schedule(notifyTask, DateTimeUtil.delayToDateTime(reminder.time()), TimeUnit.SECONDS);
