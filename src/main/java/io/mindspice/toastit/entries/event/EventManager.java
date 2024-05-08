@@ -120,6 +120,7 @@ public class EventManager implements CalendarEvents {
         scheduledNotifications.removeAll(notifications);
     }
 
+    // FIXME
     public Function<EventEntry, List<ScheduledNotification>> createEventReminders = (EventEntry event) -> {
         Tag tag = event.tags().isEmpty()
                   ? Tag.Default()

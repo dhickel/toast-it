@@ -10,7 +10,10 @@ public class DisplayEval extends ShellEvaluator<DisplayEval> {
 
     public DisplayEval(Supplier<String> displaySupplier) {
         this.displaySupplier = displaySupplier;
-        commands.add(ShellCommand.of("refresh", (__, ___) -> modeDisplay()));
+        commands.add(ShellCommand.of("refresh", (__, ___) -> {
+            clearScreen();
+            return modeDisplay();
+        }));
     }
 
     @Override
